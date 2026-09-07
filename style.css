@@ -278,6 +278,36 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
   font-size: .8rem; font-weight: 700; display: grid; place-items: center;
 }
 
+/* 읽는 동안 잠김 */
+.read-lock {
+  margin-top: 12px; border: 3px solid var(--line);
+  background: var(--paper); position: relative; overflow: hidden;
+  padding: 7px 10px; min-height: 32px;
+  display: flex; align-items: center;
+}
+.read-lock i {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 0;
+  background: #d8e3ef; z-index: 0;
+}
+.read-lock .rl-text {
+  position: relative; z-index: 1;
+  font-size: .82rem; font-weight: 800; color: var(--ink-soft);
+}
+.read-lock.done { background: #eaf3ea; border-color: var(--good); }
+.read-lock.done i { display: none; }
+.read-lock.done .rl-text { color: var(--good); }
+
+.opt.waiting, .btn.waiting {
+  opacity: .45; cursor: not-allowed;
+  filter: grayscale(0.6);
+}
+
+.result-warn {
+  margin: 0 0 10px; padding: 8px 10px;
+  background: #f6e6c8; border: 2px solid var(--line);
+  font-size: .85rem; font-weight: 700; line-height: 1.55;
+}
+
 /* 채점 결과 */
 .result-box { border: 3px solid var(--line); padding: 14px; }
 .result-box.ok { background: #eaf5ec; }

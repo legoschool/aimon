@@ -12,6 +12,38 @@ const BALANCE = {
   catchGripRatio: 0.3, // 장악력이 이 비율 이하로 떨어져야 볼을 던질 수 있다
   catchMinAccuracy: 0.6, // 그리고 정답률이 이 이상이어야 한다
   maxCatchChance: 0.95, // 포획 확률 상한 (100% 는 없다)
+
+  /* --- 막 찍기 막기 ---
+     벌을 신뢰도가 아니라 "시간"으로 준다.
+
+     연속 오답에 신뢰도를 더 깎아 봤더니, 재 보니 정반대였다.
+     찍는 아이는 어차피 76% 지고 있어서 달라지는 게 없고,
+     정직하게 못 푸는 아이(정답률 50%)만 패배가 17%→21% 로 늘었다.
+     맞히고 틀리고로 벌을 주면 결국 못 하는 아이를 때리게 된다.
+
+     그래서 "잠금이 풀리자마자 튕기듯 누르는" 행동 자체만 잡는다.
+     읽는 아이는 절대 걸리지 않고, 찍는 아이만 점점 느려진다. */
+  instantMs: 700, // 잠금 해제 후 이 안에 누르면 안 읽은 것으로 본다
+  instantAddMs: 1500, // 그때마다 다음 문제 읽기 시간이 이만큼 늘어난다
+  instantAddMax: 6000, // 늘어나도 여기까지
+
+  /* 잡으려면 적어도 이만큼은 풀어야 한다.
+     두 문제를 운으로 맞혀 바로 던지는 길을 막고,
+     몬스터 하나마다 최소 네 가지 상황은 겪게 한다. */
+  minAskedToCatch: 4,
+
+  /* --- 읽을 시간 ---
+     문제가 뜨자마자는 보기를 고를 수 없다. 글자 수에 맞춰 잠깐 잠긴다.
+     "빨리 풀어라"가 아니라 "빨리는 못 푼다"이므로,
+     천천히 읽는 아이에게 불리하지 않다. 위쪽 한계만 있고 아래는 없다. */
+  readBaseMs: 2200, // 기본으로 잠기는 시간
+  readPerCharMs: 26, // 글자 하나당 더해지는 시간
+  readMaxMs: 7000, // 아무리 길어도 여기까지
+  reReadRatio: 0.5, // 전에 틀려서 다시 만난 문제는 절반만
+
+  /* 해설도 읽게 한다. 배움은 해설에서 일어나므로 여기가 더 중요하다. */
+  explainLockWrongMs: 3500, // 틀렸을 때
+  explainLockRightMs: 1200, // 맞았을 때
 };
 
 /* 판단볼 3종 */
@@ -35,10 +67,46 @@ function calcDamage(toolId, monsterType, streak) {
   };
 }
 
-/* 틀렸을 때 깎이는 신뢰도 — 비판적사고는 절반만 다친다 */
+/* 틀렸을 때 깎이는 신뢰도 — 언제나 같다.
+   연속으로 틀린다고 더 깎지 않는다. 위 BALANCE 주석 참고. */
 function calcTrustLoss(toolId) {
   const half = TOOLS[toolId].wrongDamageMultiplier || 1;
   return Math.round(BALANCE.wrongPenalty * half);
+}
+
+/* -----------------------------------------------------------
+   읽을 시간
+
+   문제가 뜨고 이만큼은 보기를 고를 수 없다.
+   글이 길수록 길게 잠기고, 전에 틀려서 다시 만난 문제는 절반만 잠긴다.
+   ----------------------------------------------------------- */
+function calcReadMs(question, seenBefore, instantCount) {
+  const chars =
+    question.situation.length +
+    question.question.length +
+    question.options.reduce(function (sum, o) { return sum + o.length; }, 0);
+
+  let ms = Math.min(BALANCE.readBaseMs + chars * BALANCE.readPerCharMs, BALANCE.readMaxMs);
+  if (seenBefore) ms = Math.round(ms * BALANCE.reReadRatio);
+
+  // 앞서 튕기듯 눌렀던 횟수만큼 더 오래 잠근다
+  const extra = Math.min((instantCount || 0) * BALANCE.instantAddMs, BALANCE.instantAddMax);
+  return ms + extra;
+}
+
+/* 잠금이 풀린 뒤 이만큼 안에 눌렀으면 읽지 않은 것으로 본다 */
+function isInstantAnswer(msSinceUnlock) {
+  return msSinceUnlock >= 0 && msSinceUnlock < BALANCE.instantMs;
+}
+
+/* 잡을 수 있는가 — 장악력·정답률에 더해 최소 문항 수까지 본다 */
+function hasEnoughAnswers(asked) {
+  return asked >= BALANCE.minAskedToCatch;
+}
+
+/* 해설을 읽을 시간 */
+function calcExplainMs(isCorrect) {
+  return isCorrect ? BALANCE.explainLockRightMs : BALANCE.explainLockWrongMs;
 }
 
 /* -----------------------------------------------------------
@@ -53,7 +121,14 @@ function calcTrustLoss(toolId) {
 function canThrowBall(grip, maxGrip, right, asked) {
   const gripOk = grip <= maxGrip * BALANCE.catchGripRatio;
   const accOk = asked > 0 && right / asked >= BALANCE.catchMinAccuracy;
-  return { ok: gripOk && accOk, gripOk: gripOk, accOk: accOk };
+  const enoughOk = hasEnoughAnswers(asked);
+  return {
+    ok: gripOk && accOk && enoughOk,
+    gripOk: gripOk,
+    accOk: accOk,
+    enoughOk: enoughOk,
+    needMore: Math.max(0, BALANCE.minAskedToCatch - asked),
+  };
 }
 
 function accuracyMultiplier(accuracy) {

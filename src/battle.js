@@ -35,6 +35,9 @@ const battle = {
   lastId: null,
   question: null,
   tool: null,
+  instantCount: 0, // 잠금이 풀리자마자 튕기듯 누른 횟수
+  unlockedAt: 0, // 마지막으로 잠금이 풀린 시각
+  lockTimer: null, // 읽는 동안 잠가 두는 타이머
   phase: "intro",
   purifying: false,
   monY: 0, // 흔들림·튀어오름 연출용 세로 오프셋
@@ -59,6 +62,9 @@ function startBattle(monster, dom, onEnd) {
   battle.lastId = null;
   battle.question = null;
   battle.tool = null;
+  battle.instantCount = 0;
+  battle.unlockedAt = 0;
+  clearLock();
   battle.phase = "intro";
   battle.purifying = false;
   battle.monY = 0;
@@ -145,6 +151,10 @@ function updateGauges() {
   d.catchHint.className = "catch-hint" + (check.ok ? " ready" : "");
   if (check.ok) {
     d.catchHint.textContent = "지금 판단볼을 던질 수 있어요!";
+  } else if (!check.enoughOk) {
+    d.catchHint.textContent =
+      "적어도 " + BALANCE.minAskedToCatch + "문제는 풀어야 해요. " +
+      check.needMore + "문제 더 남았어요.";
   } else if (!check.gripOk && !check.accOk) {
     d.catchHint.textContent = "장악력을 더 낮추고, 정답률도 60% 이상이어야 해요.";
   } else if (!check.gripOk) {
@@ -161,7 +171,72 @@ function panel() {
   return battle.dom.panel;
 }
 
+/* -----------------------------------------------------------
+   읽는 동안 잠그기
+
+   문제가 뜨자마자 아무 보기나 누르는 걸 막는다.
+   막대가 다 차면 열린다. 남은 시간을 초 단위로 보여 줘서
+   "고장 났나?" 하는 오해가 없게 한다.
+   ----------------------------------------------------------- */
+function clearLock() {
+  if (battle.lockTimer) {
+    clearInterval(battle.lockTimer);
+    battle.lockTimer = null;
+  }
+}
+
+/* targets      : 잠가 둘 버튼 목록
+   ms           : 잠글 시간
+   text         : 잠긴 동안 보여 줄 말
+   trackInstant : 열린 뒤 얼마 만에 눌렀는지 잴지 (문제 화면에서만 true)
+
+   해설 잠금까지 시각을 기록하면 그 값이 다음 문제까지 남아,
+   실제로는 읽고 눌렀는데도 "튕겨 눌렀다"고 잘못 볼 수 있다.
+   그래서 재는 화면을 문제로 한정하고, 잠글 때마다 값을 비운다. */
+function lockUntilRead(container, targets, ms, text, trackInstant) {
+  clearLock();
+  battle.unlockedAt = 0;
+
+  const bar = document.createElement("div");
+  bar.className = "read-lock";
+  bar.innerHTML = '<i></i><span class="rl-text"></span>';
+  container.appendChild(bar);
+
+  const fill = bar.querySelector("i");
+  const label = bar.querySelector(".rl-text");
+
+  targets.forEach(function (b) {
+    b.disabled = true;
+    b.classList.add("waiting");
+  });
+
+  const start = Date.now();
+  function tick() {
+    const passed = Date.now() - start;
+    const left = Math.max(0, ms - passed);
+    fill.style.width = Math.min(100, (passed / ms) * 100) + "%";
+    label.textContent = text + "  " + (Math.ceil(left / 100) / 10).toFixed(1) + "초";
+
+    if (left <= 0) {
+      clearLock();
+      bar.classList.add("done");
+      label.textContent = "이제 고를 수 있어요";
+      if (trackInstant) battle.unlockedAt = Date.now(); // 여기서부터 얼마 만에 누르는지 잰다
+      targets.forEach(function (b) {
+        b.disabled = false;
+        b.classList.remove("waiting");
+      });
+      const first = targets[0];
+      if (first) first.focus();
+    }
+  }
+
+  tick();
+  battle.lockTimer = setInterval(tick, 100);
+}
+
 function showMessage(title, body, btnLabel, next) {
+  clearLock();
   const p = panel();
   p.innerHTML = "";
 
@@ -195,6 +270,7 @@ function showMessage(title, body, btnLabel, next) {
 
 /* ---- 도구 선택 ---- */
 function renderToolChoice() {
+  clearLock();
   const p = panel();
   p.innerHTML = "";
 
@@ -288,7 +364,9 @@ function askQuestion(toolId) {
   battle.question = q;
   battle.tool = toolId;
   battle.phase = "question";
-  if (battle.seenIds.indexOf(q.id) === -1) battle.seenIds.push(q.id);
+  // 전에 만난 문제인지 먼저 확인해 둔다 (다시 만난 문제는 절반만 잠근다)
+  const seenBefore = battle.seenIds.indexOf(q.id) !== -1;
+  if (!seenBefore) battle.seenIds.push(q.id);
 
   const p = panel();
   p.innerHTML = "";
@@ -300,7 +378,7 @@ function askQuestion(toolId) {
   tag.className = "q-tag";
   tag.innerHTML =
     "<span>" + TOOLS[toolId].icon + " " + TOOLS[toolId].name + "</span>" +
-    (battle.seenIds.indexOf(q.id) !== -1 && save.wrongIds.indexOf(q.id) !== -1
+    (seenBefore && save.wrongIds.indexOf(q.id) !== -1
       ? '<span class="again">다시 만난 문제</span>'
       : "");
   wrap.appendChild(tag);
@@ -329,6 +407,15 @@ function askQuestion(toolId) {
   wrap.appendChild(list);
 
   p.appendChild(wrap);
+
+  // 다 읽을 때까지는 고를 수 없다
+  lockUntilRead(
+    wrap,
+    Array.prototype.slice.call(list.querySelectorAll(".opt")),
+    calcReadMs(q, seenBefore, battle.instantCount),
+    "문제를 읽어요",
+    true // 문제 화면에서만 "얼마 만에 눌렀는지"를 잰다
+  );
 }
 
 /* ---- 채점 ---- */
@@ -344,7 +431,14 @@ function grade(choice) {
   // 맞히면 풀에서 빠지고, 틀리면 풀로 돌아온다
   battle.usedIds = markAnswer(battle.usedIds, q.id, correct);
 
+  // 잠금이 풀리자마자 튕기듯 눌렀는가 — 안 읽었다는 신호
+  const sinceUnlock = battle.unlockedAt ? Date.now() - battle.unlockedAt : 99999;
+  const instant = isInstantAnswer(sinceUnlock);
+  if (instant) battle.instantCount++;
+  battle.unlockedAt = 0;
+
   let dmg = null;
+  let loss = 0;
   if (correct) {
     battle.right++;
     battle.streak++;
@@ -355,15 +449,16 @@ function grade(choice) {
     hitAnimation();
   } else {
     battle.streak = 0;
-    battle.trust -= calcTrustLoss(toolId);
+    loss = calcTrustLoss(toolId);
+    battle.trust -= loss;
     sfx("wrong");
   }
 
   updateGauges();
-  renderResult(correct, choice, dmg);
+  renderResult(correct, choice, dmg, loss, instant);
 }
 
-function renderResult(correct, choice, dmg) {
+function renderResult(correct, choice, dmg, loss, instant) {
   const q = battle.question;
   const p = panel();
   p.innerHTML = "";
@@ -379,9 +474,19 @@ function renderResult(correct, choice, dmg) {
     if (battle.streak >= 2) extra += " " + battle.streak + "연속 정답!";
     head.textContent = "정답!" + extra;
   } else {
-    head.textContent = "아쉬워요. 신뢰도가 " + calcTrustLoss(battle.tool) + " 줄었어요.";
+    head.textContent = "아쉬워요. 신뢰도가 " + loss + " 줄었어요.";
   }
   box.appendChild(head);
+
+  // 튕기듯 눌렀으면 알려 준다. 신뢰도를 깎지 않고 다음 읽기 시간만 늘린다.
+  if (instant) {
+    const warn = document.createElement("p");
+    warn.className = "result-warn";
+    warn.textContent =
+      "너무 빨리 골랐어요. 다음 문제는 읽을 시간이 조금 더 길어져요. " +
+      "상황을 끝까지 읽고 고르면 훨씬 잘 맞힐 수 있어요.";
+    box.appendChild(warn);
+  }
 
   if (!correct) {
     const yours = document.createElement("p");
@@ -425,7 +530,9 @@ function renderResult(correct, choice, dmg) {
   box.appendChild(btn);
 
   p.appendChild(box);
-  btn.focus();
+
+  // 해설도 읽고 넘어가게 한다. 배움은 여기서 일어나므로 문제보다 더 중요하다.
+  lockUntilRead(box, [btn], calcExplainMs(correct), "해설을 읽어요");
 }
 
 function afterResult() {
@@ -462,6 +569,7 @@ function afterResult() {
 
 /* ---- 볼 선택 ---- */
 function renderBallChoice() {
+  clearLock();
   battle.phase = "ball";
   const p = panel();
   p.innerHTML = "";
@@ -734,6 +842,7 @@ function hitAnimation() {
 }
 
 function endBattle(reason) {
+  clearLock();
   const refilled = refillBalls();
   if (battle.onEnd) battle.onEnd(reason, refilled);
 }
