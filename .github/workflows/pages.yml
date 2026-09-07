@@ -1,0 +1,44 @@
+# main 에 올릴 때마다 GitHub Pages 로 자동 배포한다.
+#
+# configure-pages 가 Pages 를 아직 안 켰으면 켜 준다(enablement: true).
+# 빌드 과정이 없는 정적 사이트라, 폴더를 그대로 올린다.
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # Actions 탭에서 손으로도 돌릴 수 있게
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 배포는 한 번에 하나만. 진행 중인 건 끝까지 두고, 대기 중인 건 최신 것만 남긴다.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pages 설정 (필요하면 켜기)
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: 폴더 통째로 올리기
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: 배포
+        id: deployment
+        uses: actions/deploy-pages@v4
