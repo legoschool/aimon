@@ -90,6 +90,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
 }
 .game-title span { color: var(--trust); }
 .game-sub { margin: 4px 0 18px; font-weight: 700; color: var(--ink-soft); }
+.game-sub b { color: var(--good); }
 .title-story {
   background: var(--paper);
   border: 3px solid var(--line);
