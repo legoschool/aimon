@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI몬스터 — AI 시대의 가치를 잡아라</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 소리 켜고 끄기 — 어느 화면에서나 보인다 -->
+<div class="audio-bar no-print">
+  <button id="btnSfx" class="btn tiny">🔊 효과음</button>
+  <button id="btnBgm" class="btn tiny">🎵 배경음</button>
+</div>
+
+<!-- ================= 타이틀 ================= -->
+<section id="screen-title" class="screen active">
+  <div class="title-box">
+    <h1 class="game-title">AI<span>몬스터</span></h1>
+    <p class="game-sub">AI 시대의 가치를 잡아라</p>
+
+    <p class="title-story">
+      사람들이 무심코 저지르는 잘못이 <b>그림자몬</b>이 되어 떠돌고 있어요.<br>
+      상황 문제를 풀어 정체를 밝히고, <b>판단볼</b>로 붙잡아 정화해 주세요.
+    </p>
+
+    <label class="name-row">
+      <span>이름</span>
+      <input id="nameInput" type="text" maxlength="8" placeholder="이름을 적어요" autocomplete="off">
+    </label>
+    <button id="btnStart" class="btn primary big">시작하기</button>
+    <p class="name-tip">전에 하던 이름을 그대로 적으면 이어서 할 수 있어요.</p>
+
+    <div id="studentBox" class="student-box" style="display:none">
+      <p class="student-head">이 컴퓨터에 남아 있는 기록</p>
+      <div id="studentList" class="student-list"></div>
+    </div>
+
+    <div class="title-btns">
+      <button id="btnTitleDex" class="btn ghost">도감 보기</button>
+      <button id="btnClass" class="btn ghost">반 전체 기록</button>
+    </div>
+
+    <p class="title-tip">방향키 또는 화면 아래 버튼으로 움직여요.</p>
+  </div>
+</section>
+
+<!-- ================= 맵 ================= -->
+<section id="screen-map" class="screen">
+  <header class="map-hud">
+    <span id="hudName" class="hud-chip name">탐험가</span>
+    <span id="hudDex" class="hud-chip">도감 0 / 6</span>
+    <span id="hudBalls" class="hud-chip">판단볼 6 · 3 · 1</span>
+    <span class="hud-spacer"></span>
+    <button id="btnDex" class="btn small">도감</button>
+    <button id="btnReport" class="btn small">기록</button>
+    <button id="btnTitleBack" class="btn small">나가기</button>
+    <span id="hudHint" class="hud-hint"></span>
+  </header>
+
+  <div class="map-stage">
+    <div id="zoneLabel" class="zone-label"></div>
+    <canvas id="mapCanvas" aria-label="탐험 지도"></canvas>
+    <div id="mapFlash" class="map-flash"></div>
+  </div>
+
+  <div class="pad">
+    <button id="pad-up" class="pad-btn up" aria-label="위로">▲</button>
+    <div class="pad-mid">
+      <button id="pad-left" class="pad-btn" aria-label="왼쪽">◀</button>
+      <button id="pad-right" class="pad-btn" aria-label="오른쪽">▶</button>
+    </div>
+    <button id="pad-down" class="pad-btn down" aria-label="아래로">▼</button>
+  </div>
+</section>
+
+<!-- ================= 전투 ================= -->
+<section id="screen-battle" class="screen">
+  <div class="battle-top">
+    <div class="mon-info">
+      <div class="mon-line">
+        <span id="monName" class="mon-name">복붙몬</span>
+        <span id="monLv" class="mon-lv">Lv.5</span>
+        <span id="monType" class="mon-type">저작권</span>
+      </div>
+      <div class="gauge-row">
+        <span class="gauge-label">장악력</span>
+        <div class="track"><i id="gripBar" class="bar"></i></div>
+        <span id="gripText" class="gauge-num">60 / 60</span>
+      </div>
+    </div>
+
+    <canvas id="battleCanvas" width="320" height="320" aria-label="AI몬스터"></canvas>
+
+    <div class="me-info">
+      <div class="gauge-row">
+        <span class="gauge-label">신뢰도</span>
+        <div class="track"><i id="trustBar" class="bar trust"></i></div>
+        <span id="trustText" class="gauge-num">100</span>
+      </div>
+      <div class="score-line">
+        <span class="gauge-label">정답률</span>
+        <span id="scoreText" class="gauge-num">0 / 0 (0%)</span>
+      </div>
+      <p id="catchHint" class="catch-hint"></p>
+    </div>
+  </div>
+
+  <div id="battlePanel" class="battle-panel"></div>
+</section>
+
+<!-- ================= 도감 ================= -->
+<section id="screen-dex" class="screen">
+  <header class="sheet-head">
+    <h2>AI몬스터 도감</h2>
+    <span class="sheet-spacer"></span>
+    <button id="btnDexBack" class="btn small">돌아가기</button>
+  </header>
+  <p class="sheet-note">
+    잡아서 정화하면 <b>그림자몬</b>이 <b>가치몬</b>으로 바뀌어 등록돼요.
+  </p>
+  <div id="dexGrid" class="dex-grid"></div>
+</section>
+
+<!-- ================= 내 기록 ================= -->
+<section id="screen-report" class="screen">
+  <header class="sheet-head no-print">
+    <h2>탐험 기록</h2>
+    <span class="sheet-spacer"></span>
+    <button id="btnPrint" class="btn small">인쇄하기</button>
+    <button id="btnReportBack" class="btn small">돌아가기</button>
+  </header>
+  <div id="reportBody" class="report-body"></div>
+</section>
+
+<!-- ================= 반 전체 기록 (선생님용) ================= -->
+<section id="screen-class" class="screen">
+  <header class="sheet-head no-print">
+    <h2>반 전체 기록</h2>
+    <span class="sheet-spacer"></span>
+    <button id="btnClassPrint" class="btn small">인쇄하기</button>
+    <button id="btnClassBack" class="btn small">돌아가기</button>
+  </header>
+  <div id="classBody" class="report-body"></div>
+</section>
+
+<!-- ================= 안내 (튜토리얼) ================= -->
+<div id="tutorial" class="tutorial">
+  <div class="tut-box">
+    <div class="tut-doc" aria-hidden="true">🧑‍🔬</div>
+    <div id="tutorialBody" class="tut-body"></div>
+    <div class="tut-foot">
+      <div id="tutorialDots" class="tut-dots"></div>
+      <button id="tutorialNext" class="btn primary">다음</button>
+    </div>
+  </div>
+</div>
+
+<!-- 데이터 -->
+<script src="data/tools.js"></script>
+<script src="data/monsters.js"></script>
+<script src="data/questions.js"></script>
+<script src="data/player.js"></script>
+<script src="data/map.js"></script>
+<!-- 엔진 -->
+<script src="src/audio.js"></script>
+<script src="src/render.js"></script>
+<script src="src/equations.js"></script>
+<script src="src/dex.js"></script>
+<script src="src/report.js"></script>
+<script src="src/tutorial.js"></script>
+<script src="src/world.js"></script>
+<script src="src/battle.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>

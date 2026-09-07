@@ -1,0 +1,11 @@
+# 운영체제가 만드는 찌꺼기
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# 편집기
+.vscode/
+.idea/
+
+# 혹시 나중에 도구를 쓰게 되면
+node_modules/
