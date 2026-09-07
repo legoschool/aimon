@@ -46,6 +46,7 @@ function blankSave(name) {
     startedAt: null,
     lastPlayed: null,
     tutorial: { intro: false, battle: false, catchTip: false },
+    missionsDone: [], // 달성한 박사님 의뢰 id
   };
 }
 

@@ -500,6 +500,36 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
 .tut-dots i.on { background: var(--ink); }
 
 /* -----------------------------------------------------------
+   박사님 의뢰
+   ----------------------------------------------------------- */
+.mission-list { display: grid; gap: 10px; }
+.mission {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: var(--panel); border: 3px solid var(--line);
+  box-shadow: var(--shadow-sm); padding: 12px;
+}
+.mission.done { background: #eaf3ea; }
+.ms-check {
+  flex: 0 0 30px; height: 30px; display: grid; place-items: center;
+  background: var(--ink); color: var(--panel);
+  font-weight: 800; font-size: .9rem;
+}
+.mission.done .ms-check { background: var(--good); }
+.ms-body { flex: 1; min-width: 0; }
+.ms-title { margin: 0 0 3px; font-weight: 800; font-size: 1rem; }
+.mission.done .ms-title { color: var(--good); }
+.ms-desc { margin: 0 0 8px; font-size: .87rem; color: var(--ink-soft); line-height: 1.55; }
+.ms-foot {
+  margin: 0; display: flex; flex-wrap: wrap; gap: 6px 12px;
+  align-items: baseline; font-size: .78rem; font-weight: 700;
+}
+.ms-progress {
+  background: var(--paper); border: 2px solid var(--line); padding: 1px 8px;
+}
+.mission.done .ms-progress { background: #d6ead6; }
+.ms-reward { color: var(--ink-soft); }
+
+/* -----------------------------------------------------------
    반 전체 기록 표
    ----------------------------------------------------------- */
 .class-table {

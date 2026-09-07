@@ -13,7 +13,7 @@ let current = "title";
    시작
    ----------------------------------------------------------- */
 window.addEventListener("DOMContentLoaded", function () {
-  ["title", "map", "battle", "dex", "report", "class"].forEach(function (id) {
+  ["title", "map", "battle", "dex", "report", "class", "missions"].forEach(function (id) {
     screens[id] = document.getElementById("screen-" + id);
   });
 
@@ -30,6 +30,8 @@ window.addEventListener("DOMContentLoaded", function () {
   el.hudBalls = document.getElementById("hudBalls");
   el.hudHint = document.getElementById("hudHint");
   el.hudName = document.getElementById("hudName");
+  el.hudMission = document.getElementById("hudMission");
+  el.missionList = document.getElementById("missionList");
 
   el.dexGrid = document.getElementById("dexGrid");
   el.reportBody = document.getElementById("reportBody");
@@ -67,6 +69,8 @@ window.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById("btnDex").onclick = function () { openDex("map"); };
   document.getElementById("btnReport").onclick = function () { openReport("map"); };
+  document.getElementById("btnMissions").onclick = function () { openMissions("map"); };
+  document.getElementById("btnMissionsBack").onclick = closeOverlay;
   document.getElementById("btnTitleBack").onclick = function () {
     stopBgm();
     show("title");
@@ -166,6 +170,9 @@ function show(name) {
   Object.keys(screens).forEach(function (k) {
     screens[k].classList.toggle("active", k === name);
   });
+  // 맵을 보고 있을 때만 몬스터가 둥실거린다 (안 보이는 화면을 계속 그릴 이유가 없다)
+  if (name === "map") startMapAnim();
+  else stopMapAnim();
   window.scrollTo(0, 0);
 }
 
@@ -188,6 +195,12 @@ function openClass(from) {
   loadRoster();
   renderClassReport(el.classBody);
   show("class");
+}
+function openMissions(from) {
+  sfx("button");
+  overlayFrom = from;
+  renderMissions(el.missionList);
+  show("missions");
 }
 function closeOverlay() {
   sfx("button");
@@ -226,7 +239,12 @@ function updateHud() {
   el.hudDex.textContent = "도감 " + dexCaughtCount() + " / " + MONSTERS.length;
   el.hudBalls.textContent =
     "판단볼 " + save.balls.basic + " · " + save.balls.reason + " · " + save.balls.sure;
-  el.hudHint.textContent = remainingHint();
+  el.hudMission.textContent = "의뢰 " + missionsCleared() + " / " + MISSIONS.length;
+
+  const now = currentMission();
+  el.hudHint.textContent = now
+    ? "지금 할 일 — " + now.title + " : " + now.desc
+    : remainingHint();
 }
 
 let flashTimer = null;
@@ -263,8 +281,13 @@ function onEncounter(monster) {
 }
 
 function onBattleEnd(reason, refilled) {
+  // 잡았으면 맵에서 없애고, 놓쳤으면 같은 숲의 다른 자리로 옮긴다
+  const bossAppeared = updateSpawnAfterBattle(battle.monster.id) === "boss";
+
   show("map");
   drawWorld();
+
+  const cleared = checkMissions(); // 의뢰 확인 (보상까지 지급)
   updateHud();
 
   const lines = {
@@ -278,10 +301,28 @@ function onBattleEnd(reason, refilled) {
   if (refilled) msg += " (기본판단볼 3개를 보충했어요)";
   if (msg) flash(msg);
 
+  // 알릴 것이 겹치면 차례로 보여준다
+  let delay = msg ? 2000 : 300;
+  cleared.forEach(function (m) {
+    setTimeout(function () {
+      sfx("caught");
+      flash("의뢰 완료 — " + m.title + (m.reward ? " · " + m.reward.label + " 받음!" : "!"));
+    }, delay);
+    delay += 2800;
+  });
+
+  if (bossAppeared) {
+    setTimeout(function () {
+      sfx("encounter");
+      flash("허위정보 데이터숲에 가짜몬이 나타났어요!");
+    }, delay);
+    delay += 2800;
+  }
+
   if (dexCaughtCount() === MONSTERS.length) {
     setTimeout(function () {
       openReport("map");
-    }, 1200);
+    }, delay + 400);
   }
 }
 

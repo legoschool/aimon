@@ -1,5 +1,12 @@
 /* ===========================================================
    AI몬스터 — 맵 돌아다니기 & 조우
+
+   몬스터는 풀숲 위에 "보이게" 서 있다.
+   예전처럼 걸을 때마다 확률로 튀어나오지 않는다.
+
+   무작위 조우는 아무 성과 없이 헤매는 시간을 만든다.
+   눈에 보이면 목표가 분명해지고, 무엇보다
+   선생님이 교실을 돌며 화면만 봐도 진도를 알 수 있다.
    =========================================================== */
 
 const TILE = 16;
@@ -13,12 +20,16 @@ const world = {
   steps: 0,
   moving: false,
   ctx: null,
-  onEncounter: null, // 조우가 일어나면 main.js 가 넘겨준 함수를 부른다
-  onZone: null, // 밟고 있는 구역 이름이 바뀌면 알려준다
+  spawns: [], // [{ id, x, y }] 맵 위에 서 있는 몬스터들
+  bob: 0, // 둥실거리는 애니메이션
+  animTimer: null,
+  onEncounter: null,
+  onZone: null,
   lastZone: null,
 };
 
-const ENCOUNTER_RATE = 0.14; // 숲 한 칸 걸을 때마다 조우할 확률
+/* 보스는 허위정보 숲 안쪽 고정 자리에 나타난다 */
+const BOSS_SPOT = { x: 17, y: 2 };
 
 function initWorld(canvas) {
   world.ctx = setupCanvas(canvas, MAP_W * TILE, MAP_H * TILE, MAP_SCALE);
@@ -27,13 +38,108 @@ function initWorld(canvas) {
   world.dir = "down";
   world.frame = 0;
   world.steps = 0;
+  spawnAll();
+  startMapAnim();
   drawWorld();
 }
 
+/* -----------------------------------------------------------
+   몬스터 배치
+   ----------------------------------------------------------- */
+
+/* 어떤 속성의 풀숲 칸을 모두 모은다 */
+function zoneTiles(typeId) {
+  const ch = Object.keys(ENCOUNTER_TILE).filter(function (k) {
+    return ENCOUNTER_TILE[k] === typeId;
+  })[0];
+  const list = [];
+  for (let y = 0; y < MAP_H; y++) {
+    for (let x = 0; x < MAP_W; x++) {
+      if (tileAt(x, y) === ch) list.push({ x: x, y: y });
+    }
+  }
+  return list;
+}
+
+/* 다른 몬스터나 주인공과 겹치지 않는 자리 하나 고르기 */
+function freeSpotIn(typeId, skipId) {
+  const tiles = zoneTiles(typeId).filter(function (t) {
+    if (t.x === world.x && t.y === world.y) return false;
+    return !world.spawns.some(function (s) {
+      return s.id !== skipId && s.x === t.x && s.y === t.y;
+    });
+  });
+  if (tiles.length === 0) return null;
+  return tiles[Math.floor(Math.random() * tiles.length)];
+}
+
+/* 아직 정화하지 않은 몬스터를 모두 맵에 세운다 */
+function spawnAll() {
+  world.spawns = [];
+  MONSTERS.forEach(function (m) {
+    if (isCaught(m.id)) return;
+    if (m.boss) {
+      // 보스는 3마리 이상 정화해야 나타나고, 자리는 고정이다
+      if (dexCaughtCount() < 3) return;
+      world.spawns.push({ id: m.id, x: BOSS_SPOT.x, y: BOSS_SPOT.y });
+      return;
+    }
+    const spot = freeSpotIn(m.type, m.id);
+    if (spot) world.spawns.push({ id: m.id, x: spot.x, y: spot.y });
+  });
+}
+
+/* 전투가 끝난 뒤 — 잡았으면 없애고, 놓쳤으면 같은 숲의 다른 자리로 옮긴다 */
+function updateSpawnAfterBattle(monsterId) {
+  const m = getMonster(monsterId);
+
+  if (isCaught(monsterId)) {
+    world.spawns = world.spawns.filter(function (s) {
+      return s.id !== monsterId;
+    });
+    // 3마리를 채우는 순간 보스가 등장한다
+    if (!world.spawns.some(function (s) { return getMonster(s.id).boss; })) {
+      const boss = MONSTERS.filter(function (x) { return x.boss; })[0];
+      if (boss && !isCaught(boss.id) && dexCaughtCount() >= 3) {
+        world.spawns.push({ id: boss.id, x: BOSS_SPOT.x, y: BOSS_SPOT.y });
+        return "boss";
+      }
+    }
+    return null;
+  }
+
+  // 놓친 몬스터는 자리를 옮겨 다시 도전할 수 있게 한다 (보스는 제자리)
+  if (m.boss) return null;
+  const spot = freeSpotIn(m.type, monsterId);
+  if (!spot) return null;
+  world.spawns.forEach(function (s) {
+    if (s.id === monsterId) { s.x = spot.x; s.y = spot.y; }
+  });
+  return null;
+}
+
+/* -----------------------------------------------------------
+   그리기
+   ----------------------------------------------------------- */
 function drawWorld() {
   const ctx = world.ctx;
   if (!ctx) return;
   drawMap(ctx, TILE, MAP_SCALE);
+
+  // 맵 위의 몬스터들 — 살짝 둥실거린다
+  world.spawns.forEach(function (s) {
+    const m = getMonster(s.id);
+    const lift = world.bob ? -2 : 0;
+    drawSprite(
+      ctx,
+      m.sprite,
+      paletteFor(m.type),
+      s.x * TILE * MAP_SCALE,
+      (s.y * TILE + lift) * MAP_SCALE,
+      MAP_SCALE,
+      false
+    );
+  });
 
   const sp = playerSprite(world.dir, world.frame);
   drawSprite(
@@ -47,7 +153,24 @@ function drawWorld() {
   );
 }
 
-/* 한 칸 움직이기. 벽이면 방향만 바꾸고 제자리에 선다. */
+function startMapAnim() {
+  stopMapAnim();
+  world.animTimer = setInterval(function () {
+    world.bob = world.bob ? 0 : 1;
+    drawWorld();
+  }, 420);
+}
+
+function stopMapAnim() {
+  if (world.animTimer) {
+    clearInterval(world.animTimer);
+    world.animTimer = null;
+  }
+}
+
+/* -----------------------------------------------------------
+   움직이기
+   ----------------------------------------------------------- */
 function moveWorld(dir) {
   if (world.moving) return;
   world.dir = dir;
@@ -72,10 +195,9 @@ function moveWorld(dir) {
   announceZone();
   sfx("step");
 
-  // 걸음 사이에 아주 짧은 간격을 둬서 키를 눌러도 미끄러지지 않게
   setTimeout(function () {
     world.moving = false;
-    checkEncounter();
+    bumpIntoMonster();
   }, 90);
 }
 
@@ -88,55 +210,31 @@ function announceZone() {
   }
 }
 
-function checkEncounter() {
-  const ch = tileAt(world.x, world.y);
-  const type = ENCOUNTER_TILE[ch];
-  if (!type) return;
-  if (Math.random() >= ENCOUNTER_RATE) return;
-
-  const monster = rollMonster(type);
-  if (monster && world.onEncounter) world.onEncounter(monster);
+/* 몬스터가 서 있는 칸에 올라서면 전투가 시작된다 */
+function bumpIntoMonster() {
+  const hit = world.spawns.filter(function (s) {
+    return s.x === world.x && s.y === world.y;
+  })[0];
+  if (!hit) return;
+  const m = getMonster(hit.id);
+  if (m && world.onEncounter) world.onEncounter(m);
 }
 
 /* -----------------------------------------------------------
-   어떤 몬스터가 나올까
-
-   같은 숲에 두 마리가 산다. 약한 쪽이 더 자주 나온다.
-   가짜몬(보스)은 다른 몬스터를 3마리 이상 정화한 뒤에야 나타난다.
+   길잡이 문구
    ----------------------------------------------------------- */
-function rollMonster(type) {
-  let pool = getMonstersByType(type);
-
-  const caughtCount = dexCaughtCount();
-  pool = pool.filter(function (m) {
-    return !m.boss || caughtCount >= 3;
-  });
-  if (pool.length === 0) return null;
-  if (pool.length === 1) return pool[0];
-
-  // 레벨이 낮은 쪽 65%, 높은 쪽 35%
-  pool.sort(function (a, b) {
-    return a.level - b.level;
-  });
-  return Math.random() < 0.65 ? pool[0] : pool[1];
-}
-
-/* 아직 안 잡은 몬스터가 어느 숲에 있는지 알려준다 (길잡이 문구) */
 function remainingHint() {
   const left = MONSTERS.filter(function (m) {
     return !isCaught(m.id);
   });
   if (left.length === 0) return "모든 AI몬스터를 정화했어요!";
 
-  const bossOnly = left.length === 1 && left[0].boss;
-  if (bossOnly && dexCaughtCount() < 3) {
-    return "가짜몬은 3마리 이상 정화해야 나타나요.";
+  const boss = left.filter(function (m) { return m.boss; })[0];
+  if (left.length === 1 && boss) {
+    return "마지막 " + boss.name + "이(가) 허위정보 데이터숲에서 기다려요.";
   }
-  const zones = [];
-  left.forEach(function (m) {
-    if (m.boss && dexCaughtCount() < 3) return;
-    const n = TYPES[m.type].name + " 데이터숲";
-    if (zones.indexOf(n) === -1) zones.push(n);
-  });
-  return "아직 " + left.length + "마리 남았어요 · " + zones.join(", ");
+  if (boss && dexCaughtCount() < 3) {
+    return "아직 " + left.length + "마리 · " + boss.name + "은(는) 3마리를 정화해야 나타나요.";
+  }
+  return "아직 " + left.length + "마리 남았어요. 풀숲 위의 몬스터에게 다가가 보세요.";
 }

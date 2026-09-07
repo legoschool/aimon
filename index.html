@@ -51,8 +51,10 @@
   <header class="map-hud">
     <span id="hudName" class="hud-chip name">탐험가</span>
     <span id="hudDex" class="hud-chip">도감 0 / 6</span>
+    <span id="hudMission" class="hud-chip">의뢰 0 / 6</span>
     <span id="hudBalls" class="hud-chip">판단볼 6 · 3 · 1</span>
     <span class="hud-spacer"></span>
+    <button id="btnMissions" class="btn small">의뢰</button>
     <button id="btnDex" class="btn small">도감</button>
     <button id="btnReport" class="btn small">기록</button>
     <button id="btnTitleBack" class="btn small">나가기</button>
@@ -110,6 +112,16 @@
   <div id="battlePanel" class="battle-panel"></div>
 </section>
 
+<!-- ================= 박사님 의뢰 ================= -->
+<section id="screen-missions" class="screen">
+  <header class="sheet-head">
+    <h2>박사님 의뢰</h2>
+    <span class="sheet-spacer"></span>
+    <button id="btnMissionsBack" class="btn small">돌아가기</button>
+  </header>
+  <div id="missionList" class="mission-list"></div>
+</section>
+
 <!-- ================= 도감 ================= -->
 <section id="screen-dex" class="screen">
   <header class="sheet-head">
@@ -163,12 +175,14 @@
 <script src="data/questions.js"></script>
 <script src="data/player.js"></script>
 <script src="data/map.js"></script>
+<script src="data/missions.js"></script>
 <!-- 엔진 -->
 <script src="src/audio.js"></script>
 <script src="src/render.js"></script>
 <script src="src/equations.js"></script>
 <script src="src/dex.js"></script>
 <script src="src/report.js"></script>
+<script src="src/missions.js"></script>
 <script src="src/tutorial.js"></script>
 <script src="src/world.js"></script>
 <script src="src/battle.js"></script>
