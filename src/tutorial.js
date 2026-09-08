@@ -90,7 +90,7 @@ function tutorialIntro(onDone) {
         text:
           "그림자몬은 힘으로 이기는 게 아니에요.<br>" +
           "<b>상황 문제를 풀어</b> 정체를 밝혀야 힘이 빠집니다.<br><br>" +
-          "충분히 약해지면 <b>판단볼</b>로 붙잡아 정화해 주세요.",
+          "충분히 약해지면 <b>가치볼</b>로 붙잡아 정화해 주세요.",
       },
       {
         title: "어디로 가야 하나요?",
@@ -177,7 +177,7 @@ function tutorialCatch(onDone) {
   tutorialOpen(
     [
       {
-        title: "이제 판단볼을 던질 수 있어요",
+        title: "이제 가치볼을 던질 수 있어요",
         text:
           "세 가지를 모두 채워야 던질 수 있어요.<br><br>" +
           "① 몬스터의 <b>장악력이 30% 이하</b><br>" +

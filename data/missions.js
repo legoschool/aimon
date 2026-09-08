@@ -37,7 +37,7 @@ const MISSIONS = [
     desc: "풀숲 위의 그림자몬에게 다가가, 한 마리를 정화하세요.",
     goal: function (s) { return s.caught.length >= 1; },
     progress: function (s) { return Math.min(s.caught.length, 1) + " / 1"; },
-    reward: { ball: "basic", count: 2, label: "기본판단볼 2개" },
+    reward: { ball: "basic", count: 2, label: "가치볼 2개" },
   },
   {
     id: "m2",

@@ -131,7 +131,16 @@ function drawBattle() {
   });
   ctx.globalAlpha = 1;
 
-  ctx.globalAlpha = battle.monAlpha;
+  // 장악력이 깎일수록 몬스터가 흐릿해진다.
+  // 0 이 되어도 완전히 지워지지 않고 옅게 남아서,
+  // "약해졌지만 아직 사라지지 않았다" 를 눈으로 보여 준다.
+  let monAlpha = battle.monAlpha;
+  if (!battle.purifying) {
+    const left = Math.max(0, battle.grip) / m.maxGrip;
+    monAlpha = Math.min(monAlpha, 0.45 + 0.55 * left);
+  }
+
+  ctx.globalAlpha = monAlpha;
   drawSprite(ctx, grid, pal, MON_OFFSET, MON_OFFSET + battle.monY, MON_SCALE, false);
   ctx.globalAlpha = 1;
 
@@ -189,11 +198,14 @@ function updateGauges() {
   const check = canThrowBall(battle.grip, m.maxGrip, battle.right, battle.asked);
   d.catchHint.className = "catch-hint" + (check.ok ? " ready" : "");
   if (check.ok) {
-    d.catchHint.textContent = "지금 판단볼을 던질 수 있어요!";
+    d.catchHint.textContent = "지금 가치볼을 던질 수 있어요!";
   } else if (!check.enoughOk) {
-    d.catchHint.textContent =
-      "적어도 " + BALANCE.minAskedToCatch + "문제는 풀어야 해요. " +
-      check.needMore + "문제 더 남았어요.";
+    // "몇 문제를 더 풀어라"는 규칙이라 벌처럼 들린다.
+    // "아직 안 사라졌다, 더 공격해라"는 목표라서 아이가 더 하고 싶어진다.
+    d.catchHint.textContent = check.gripOk
+      ? "장악력은 0이지만 아직 완전히 사라지지 않았어요! " +
+        check.needMore + "번 더 맞혀서 완전히 몰아내요."
+      : "아직 힘이 남아 있어요. " + check.needMore + "번은 더 맞혀야 해요.";
   } else if (!check.gripOk && !check.accOk) {
     d.catchHint.textContent = "장악력을 더 낮추고, 정답률도 60% 이상이어야 해요.";
   } else if (!check.gripOk) {
@@ -367,7 +379,7 @@ function renderToolChoice() {
   const throwBtn = document.createElement("button");
   throwBtn.className = "btn ball" + (check.ok ? "" : " locked");
   throwBtn.disabled = !check.ok;
-  throwBtn.textContent = "🔮 판단볼 던지기";
+  throwBtn.textContent = "🔮 가치볼 던지기";
   throwBtn.onclick = renderBallChoice;
   row.appendChild(throwBtn);
 
@@ -716,8 +728,8 @@ function afterResult() {
   if (check.ok) {
     showMessage(
       "<b>" + battle.monster.name + "</b>의 힘이 크게 약해졌어요!",
-      "이제 판단볼을 던져 정화할 수 있어요.",
-      "판단볼 고르기",
+      "이제 가치볼을 던져 정화할 수 있어요.",
+      "가치볼 고르기",
       function () {
         // 처음 던져 보는 학생에게만 조건을 설명한다
         tutorialCatch(renderBallChoice);
@@ -739,7 +751,7 @@ function renderBallChoice() {
 
   const head = document.createElement("p");
   head.className = "panel-head";
-  head.textContent = "어떤 판단볼을 던질까?";
+  head.textContent = "어떤 가치볼을 던질까?";
   p.appendChild(head);
 
   const grid = document.createElement("div");
@@ -896,7 +908,7 @@ function onEscaped(shakes) {
     function () {
       if (totalBalls() <= 0) {
         showMessage(
-          "판단볼이 다 떨어졌어요.",
+          "가치볼이 다 떨어졌어요.",
           "일단 물러났다가 다시 도전해요.",
           "돌아가기",
           function () { endBattle("noball"); }

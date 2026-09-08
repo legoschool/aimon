@@ -2,7 +2,7 @@
    AI몬스터 — 증표 주기와 보여 주기
 
    전투·복습이 끝날 때마다 확인해서, 새로 얻은 증표를 알려 준다.
-   판단볼과 달리 소모되지 않고 그대로 남는다.
+   가치볼과 달리 소모되지 않고 그대로 남는다.
    =========================================================== */
 
 function hasBadge(id) {
@@ -38,7 +38,7 @@ function renderBadges(container) {
   const note = document.createElement("p");
   note.className = "sheet-note";
   note.innerHTML =
-    "판단볼은 쓰면 사라지지만 <b>증표는 남습니다.</b> " +
+    "가치볼은 쓰면 사라지지만 <b>증표는 남습니다.</b> " +
     "기록에 실리고 인쇄됩니다. <b>" + badgeCount() + " / " + BADGES.length + "</b> 획득";
   container.appendChild(note);
 

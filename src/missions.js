@@ -48,7 +48,7 @@ function renderMissions(container) {
   const head = document.createElement("p");
   head.className = "sheet-note";
   head.innerHTML =
-    "박사님이 부탁한 일이에요. 달성하면 <b>판단볼</b>을 받아요. " +
+    "박사님이 부탁한 일이에요. 달성하면 <b>가치볼</b>을 받아요. " +
     "<b>" + missionsCleared() + " / " + MISSIONS.length + "</b> 완료";
   container.appendChild(head);
 

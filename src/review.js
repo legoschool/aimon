@@ -2,7 +2,7 @@
    AI몬스터 — 복습 모드
 
    틀렸던 문제만 모아 다시 푼다.
-   맞히면 기록에서 지워지고, 지운 만큼 판단볼을 받는다.
+   맞히면 기록에서 지워지고, 지운 만큼 가치볼을 받는다.
 
    기록(리포트)에 틀린 문제가 쌓이기만 하고 게임 안에서
    다시 풀 방법이 없었다. 틀린 문제를 다시 푸는 것이
@@ -77,7 +77,7 @@ function renderReviewIntro() {
 
   box.innerHTML =
     '<p class="msg-title">틀렸던 문제 <b>' + review.queue.length + "개</b>가 기다려요</p>" +
-    '<p class="msg-body">다시 맞히면 기록에서 지워지고 판단볼을 받아요.<br>' +
+    '<p class="msg-body">다시 맞히면 기록에서 지워지고 가치볼을 받아요.<br>' +
     "여기서는 틀려도 신뢰도가 줄지 않으니 마음 편히 도전해요.</p>";
 
   const go = document.createElement("button");
@@ -227,14 +227,14 @@ function gradeReview(choice) {
 }
 
 /* -----------------------------------------------------------
-   마무리 — 지운 만큼 판단볼을 준다
+   마무리 — 지운 만큼 가치볼을 준다
    ----------------------------------------------------------- */
 function renderReviewDone() {
   clearLock();
   const p = review.body;
   p.innerHTML = "";
 
-  // 두 개 지울 때마다 기본판단볼 하나 (최대 3개)
+  // 두 개 지울 때마다 가치볼 하나 (최대 3개)
   const basic = Math.min(Math.floor(review.cleared.length / 2), 3);
   const allClear = review.cleared.length > 0 && wrongCount() === 0;
   if (basic > 0) save.balls.basic += basic;
@@ -247,7 +247,7 @@ function renderReviewDone() {
   box.className = "msg-box";
 
   let reward = "";
-  if (basic > 0) reward += "기본판단볼 " + basic + "개";
+  if (basic > 0) reward += "가치볼 " + basic + "개";
   if (allClear) reward += (reward ? " · " : "") + "근거볼 1개";
 
   box.innerHTML =

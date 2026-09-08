@@ -353,7 +353,7 @@ function updateHud() {
   el.hudName.textContent = displayName();
   el.hudDex.textContent = "도감 " + dexCaughtCount() + " / " + MONSTERS.length;
   el.hudBalls.textContent =
-    "판단볼 " + save.balls.basic + " · " + save.balls.reason + " · " + save.balls.sure;
+    "가치볼 " + save.balls.basic + " · " + save.balls.reason + " · " + save.balls.sure;
   el.hudMission.textContent = "의뢰 " + missionsCleared() + " / " + MISSIONS.length;
 
   // 복습할 문제가 있으면 버튼에 개수를 띄운다
@@ -437,10 +437,10 @@ function onBattleEnd(reason, refilled) {
     lose: "다시 도전해 봐요. 해설을 떠올리면 훨씬 쉬워요.",
     run: "물러났어요.",
     dry: "이 몬스터의 문제를 모두 맞혔어요!",
-    noball: "판단볼이 떨어져 물러났어요.",
+    noball: "가치볼이 떨어져 물러났어요.",
   };
   let msg = lines[reason] || "";
-  if (refilled) msg += " (기본판단볼 3개를 보충했어요)";
+  if (refilled) msg += " (가치볼 3개를 보충했어요)";
   if (msg) flash(msg);
 
   // 알릴 것이 겹치면 차례로 보여준다
