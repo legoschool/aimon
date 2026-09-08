@@ -100,6 +100,38 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
   text-align: left;
   font-size: .95rem;
 }
+/* 반·번호 칸 */
+.id-row { display: flex; gap: 10px; margin-bottom: 10px; }
+.id-row label {
+  flex: 1; display: flex; align-items: center; gap: 8px; font-weight: 700;
+}
+.id-row input {
+  flex: 1; min-width: 0; font: inherit; padding: 10px;
+  border: 3px solid var(--line); background: #fff;
+}
+.id-row input.shake { animation: shake .35s; border-color: var(--bad); }
+
+/* 선생님 들어가는 곳 — 눈에 안 띄게 */
+.teacher-link {
+  display: block; margin: 14px auto 0; padding: 4px 10px;
+  background: none; border: none; cursor: pointer;
+  font: inherit; font-size: .72rem; color: #b8b2a0;
+  text-decoration: underline;
+}
+.teacher-link:hover { color: var(--ink-soft); }
+
+.admin-login {
+  background: var(--panel); border: 3px solid var(--line);
+  box-shadow: var(--shadow-sm); padding: 16px; max-width: 460px;
+}
+.admin-msg { margin: 10px 0 0; font-size: .85rem; font-weight: 700; color: var(--ink-soft); }
+.admin-msg.warn { color: var(--bad); }
+.admin-table { font-size: .82rem; }
+.admin-table th, .admin-table td { padding: 5px 6px; }
+.admin-table tr.top1 { background: #fbf3d8; }
+.admin-table tr.top2 { background: #eef1f4; }
+.admin-table tr.top3 { background: #f6efe6; }
+
 .name-row {
   display: flex; align-items: center; gap: 10px;
   margin-bottom: 16px; font-weight: 700;

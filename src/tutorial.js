@@ -82,7 +82,7 @@ function tutorialIntro(onDone) {
       {
         title: "AI 연구소 박사님",
         text:
-          "어서 와요, <b>" + escapeHtml(save.name) + "</b> 탐험가!<br><br>" +
+          "어서 와요, <b>" + escapeHtml(save.nick || save.name) + "</b> 탐험가!<br><br>" +
           "요즘 사람들이 AI를 쓰다가 무심코 저지르는 잘못이 <b>그림자몬</b>이 되어 떠돌고 있어요.",
       },
       {

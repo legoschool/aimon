@@ -13,12 +13,14 @@ let current = "title";
    시작
    ----------------------------------------------------------- */
 window.addEventListener("DOMContentLoaded", function () {
-  ["title", "map", "battle", "dex", "report", "class", "missions", "review", "badges"]
+  ["title", "map", "battle", "dex", "report", "class", "missions", "review", "badges", "admin"]
     .forEach(function (id) {
       screens[id] = document.getElementById("screen-" + id);
     });
 
   el.nameInput = document.getElementById("nameInput");
+  el.klassInput = document.getElementById("klassInput");
+  el.numberInput = document.getElementById("numberInput");
   el.btnStart = document.getElementById("btnStart");
   el.studentList = document.getElementById("studentList");
   el.studentBox = document.getElementById("studentBox");
@@ -43,22 +45,43 @@ window.addEventListener("DOMContentLoaded", function () {
   loadRoster();
   renderStudentList();
 
-  el.nameInput.value = lastStudentName();
+  // 반·번호를 안 받는 설정이면 그 칸을 숨긴다
+  if (typeof ASK_CLASS_NUMBER !== "undefined" && !ASK_CLASS_NUMBER) {
+    document.getElementById("idRow").style.display = "none";
+  }
+  // 마지막에 한 학생 정보를 채워 둔다 (이어서 하기 쉽게)
+  const lastKey = lastStudentName();
+  if (lastKey && roster[lastKey]) {
+    el.klassInput.value = roster[lastKey].klass || "";
+    el.numberInput.value = roster[lastKey].number || "";
+    el.nameInput.value = roster[lastKey].nick || "";
+  }
 
   el.btnStart.onclick = function () {
-    const name = (el.nameInput.value || "").trim();
-    if (!name) {
-      el.nameInput.focus();
-      el.nameInput.classList.add("shake");
-      setTimeout(function () { el.nameInput.classList.remove("shake"); }, 400);
+    const klass = (el.klassInput.value || "").trim();
+    const number = (el.numberInput.value || "").trim();
+    const nick = (el.nameInput.value || "").trim();
+
+    // 반·번호를 받는 설정이면 셋 다, 아니면 별명만 있으면 된다
+    const needId = typeof ASK_CLASS_NUMBER === "undefined" || ASK_CLASS_NUMBER;
+    const missing = needId ? (!klass || !number || !nick) : !nick;
+    if (missing) {
+      const target = !nick ? el.nameInput : !klass ? el.klassInput : el.numberInput;
+      target.focus();
+      target.classList.add("shake");
+      setTimeout(function () { target.classList.remove("shake"); }, 400);
       return;
     }
-    if (hasStudent(name)) {
-      // 같은 이름이 이미 있으면 이어서 한다
-      selectStudent(name);
+
+    const key = studentKey(klass, number, nick);
+    if (hasStudent(key)) {
+      // 같은 반·번호가 이미 있으면 이어서 한다
+      selectStudent(key);
+      save.nick = nick; // 별명은 바꿀 수 있게
+      writeSave();
       enterMap("이어서 탐험합니다.");
     } else {
-      newStudent(name);
+      newStudent(klass, number, nick);
       enterMap();
     }
   };
@@ -67,6 +90,19 @@ window.addEventListener("DOMContentLoaded", function () {
   });
 
   el.btnTitleDex.onclick = function () { openDex("title"); };
+
+  // 선생님 화면 (학생에게 보이지 않는 작은 글씨)
+  document.getElementById("btnAdmin").onclick = openAdmin;
+  document.getElementById("btnAdminBack").onclick = function () {
+    sfx("button");
+    show("title");
+    renderStudentList();
+  };
+  document.getElementById("btnAdminPrint").onclick = function () { window.print(); };
+  document.getElementById("btnAdminLoad").onclick = loadAdmin;
+  document.getElementById("adminPw").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") loadAdmin();
+  });
   el.btnClass.onclick = function () { openClass("title"); };
 
   document.getElementById("btnDex").onclick = function () { openDex("map"); };
@@ -91,6 +127,16 @@ window.addEventListener("DOMContentLoaded", function () {
   document.getElementById("btnReportBack").onclick = closeOverlay;
   document.getElementById("btnClassBack").onclick = closeOverlay;
   document.getElementById("btnPrint").onclick = function () { window.print(); };
+
+  // 기록을 손으로 한 번 더 보내기
+  const sendBtn = document.getElementById("btnSendSheet");
+  sendBtn.style.display = sheetReady() ? "" : "none";
+  sendBtn.onclick = function () {
+    sfx("button");
+    const ok = sendRecord(true);
+    sendBtn.textContent = ok ? "보냈어요!" : "보낼 수 없어요";
+    setTimeout(function () { sendBtn.textContent = "시트로 보내기"; }, 2000);
+  };
   document.getElementById("btnClassPrint").onclick = function () { window.print(); };
 
   document.getElementById("tutorialNext").onclick = tutorialNext;
@@ -147,8 +193,8 @@ function renderStudentList() {
     const go = document.createElement("button");
     go.className = "student-go";
     go.innerHTML =
-      '<span class="st-name">' + escapeHtml(s.name) + "</span>" +
-      '<span class="st-meta">정화 ' + s.caught + " / 6 · 정답률 " +
+      '<span class="st-name">' + escapeHtml(s.label || s.name) + "</span>" +
+      '<span class="st-meta">정화 ' + s.caught + " / " + MONSTERS.length + " · 정답률 " +
       (s.asked ? Math.round(s.rate * 100) : 0) + "%</span>";
     go.onclick = function () {
       sfx("button");
@@ -160,9 +206,9 @@ function renderStudentList() {
     const del = document.createElement("button");
     del.className = "student-del";
     del.textContent = "지움";
-    del.title = s.name + " 기록 지우기";
+    del.title = (s.label || s.name) + " 기록 지우기";
     del.onclick = function () {
-      if (!confirm(s.name + " 의 기록을 지울까요? 되돌릴 수 없어요.")) return;
+      if (!confirm((s.label || s.name) + " 의 기록을 지울까요? 되돌릴 수 없어요.")) return;
       deleteStudent(s.name);
       renderStudentList();
     };
@@ -212,6 +258,49 @@ function openMissions(from) {
   renderMissions(el.missionList);
   show("missions");
 }
+/* -----------------------------------------------------------
+   선생님 화면 — 암호를 넣어야 반 전체 기록이 보인다
+   ----------------------------------------------------------- */
+function openAdmin() {
+  sfx("button");
+  document.getElementById("adminBody").innerHTML = "";
+  document.getElementById("adminLogin").style.display = "";
+  const msg = document.getElementById("adminMsg");
+  msg.textContent = sheetReady()
+    ? ""
+    : "아직 시트 주소가 설정되지 않았어요. data/config.js 와 구글시트연동.md 를 보세요.";
+  msg.className = "admin-msg" + (sheetReady() ? "" : " warn");
+  show("admin");
+  document.getElementById("adminPw").focus();
+}
+
+function loadAdmin() {
+  const pw = document.getElementById("adminPw").value;
+  const msg = document.getElementById("adminMsg");
+  const body = document.getElementById("adminBody");
+
+  if (!pw) {
+    msg.textContent = "암호를 넣어 주세요.";
+    msg.className = "admin-msg warn";
+    return;
+  }
+
+  msg.textContent = "불러오는 중…";
+  msg.className = "admin-msg";
+  body.innerHTML = "";
+
+  fetchClassRecords(pw)
+    .then(function (rows) {
+      msg.textContent = "";
+      document.getElementById("adminLogin").style.display = "none";
+      renderAdminRows(body, rows);
+    })
+    .catch(function (err) {
+      msg.textContent = err.message || "기록을 불러오지 못했어요.";
+      msg.className = "admin-msg warn";
+    });
+}
+
 function openBadges(from) {
   sfx("dexOpen");
   overlayFrom = from;
@@ -261,7 +350,7 @@ function enterMap(message) {
 }
 
 function updateHud() {
-  el.hudName.textContent = save.name;
+  el.hudName.textContent = displayName();
   el.hudDex.textContent = "도감 " + dexCaughtCount() + " / " + MONSTERS.length;
   el.hudBalls.textContent =
     "판단볼 " + save.balls.basic + " · " + save.balls.reason + " · " + save.balls.sure;
@@ -339,6 +428,9 @@ function onBattleEnd(reason, refilled) {
   const cleared = checkMissions(); // 의뢰 확인 (보상까지 지급)
   const newBadges = checkBadges(); // 증표 확인 (사라지지 않는 보상)
   updateHud();
+
+  // 정화했을 때만 시트로 보낸다. 실패해도 게임은 그대로 돌아간다.
+  if (reason === "caught") sendRecord(true);
 
   const lines = {
     caught: "도감에 새 가치몬이 등록됐어요!",

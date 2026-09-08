@@ -25,9 +25,29 @@ const LAST_KEY = "aimon_last_v1";
 
 let roster = {}; // 이름 → 저장본
 
+/* 저장본을 찾는 열쇠 — 반·번호가 있으면 그것이 사람을 가른다.
+   닉네임을 바꿔도 이어서 할 수 있고, 닉네임이 겹쳐도 섞이지 않는다. */
+function studentKey(klass, number, nick) {
+  const k = String(klass || "").trim();
+  const n = String(number || "").trim();
+  if (k && n) return k + "-" + n;
+  return String(nick || "").trim();
+}
+
+/* 화면에 보여 줄 이름 */
+function displayName(s) {
+  const t = s || save;
+  if (!t) return "";
+  if (t.nick && t.klass && t.number) return t.nick + " (" + t.klass + "-" + t.number + ")";
+  return t.nick || t.name || "";
+}
+
 function blankSave(name) {
   return {
-    name: name || "탐험가",
+    name: name || "탐험가", // 저장본을 찾는 열쇠
+    klass: "", // 반
+    number: "", // 번호
+    nick: name || "탐험가", // 화면에 보이는 이름
     caught: [],
     balls: { basic: BALLS.basic.start, reason: BALLS.reason.start, sure: BALLS.sure.start },
     stats: {
@@ -107,6 +127,10 @@ function listStudents() {
       });
       return {
         name: n,
+        nick: s.nick || n,
+        klass: s.klass || "",
+        number: s.number || "",
+        label: displayName(s),
         caught: (s.caught || []).length,
         right: right,
         asked: asked,
@@ -139,9 +163,13 @@ function selectStudent(name) {
   return true;
 }
 
-/* 처음부터 하기 (같은 이름이 있으면 덮어쓴다) */
-function newStudent(name) {
-  applySave(blankSave(name || "탐험가"));
+/* 처음부터 하기 (같은 열쇠가 있으면 덮어쓴다) */
+function newStudent(klass, number, nick) {
+  const key = studentKey(klass, number, nick);
+  applySave(blankSave(key));
+  save.klass = String(klass || "").trim();
+  save.number = String(number || "").trim();
+  save.nick = String(nick || "").trim() || key;
   save.startedAt = Date.now();
   writeSave();
 }

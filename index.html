@@ -26,12 +26,21 @@
       상황 문제를 풀어 정체를 밝히고, <b>판단볼</b>로 붙잡아 정화해 주세요.
     </p>
 
+    <div id="idRow" class="id-row">
+      <label><span>반</span>
+        <input id="klassInput" type="text" maxlength="6" placeholder="5-3" autocomplete="off"></label>
+      <label><span>번호</span>
+        <input id="numberInput" type="text" maxlength="3" placeholder="12" inputmode="numeric" autocomplete="off"></label>
+    </div>
     <label class="name-row">
-      <span>이름</span>
-      <input id="nameInput" type="text" maxlength="8" placeholder="이름을 적어요" autocomplete="off">
+      <span>별명</span>
+      <input id="nameInput" type="text" maxlength="8" placeholder="별명을 지어요" autocomplete="off">
     </label>
     <button id="btnStart" class="btn primary big">시작하기</button>
-    <p class="name-tip">전에 하던 이름을 그대로 적으면 이어서 할 수 있어요.</p>
+    <p class="name-tip">
+      전에 하던 반·번호를 그대로 적으면 이어서 할 수 있어요.<br>
+      <b>이름은 적지 않아요.</b> 왜 그럴까요?
+    </p>
 
     <div id="studentBox" class="student-box" style="display:none">
       <p class="student-head">이 컴퓨터에 남아 있는 기록</p>
@@ -40,10 +49,11 @@
 
     <div class="title-btns">
       <button id="btnTitleDex" class="btn ghost">도감 보기</button>
-      <button id="btnClass" class="btn ghost">반 전체 기록</button>
+      <button id="btnClass" class="btn ghost">이 컴퓨터 기록</button>
     </div>
 
     <p class="title-tip">방향키 또는 화면 아래 버튼으로 움직여요.</p>
+    <button id="btnAdmin" class="teacher-link">선생님</button>
   </div>
 </section>
 
@@ -134,6 +144,30 @@
   <div id="missionList" class="mission-list"></div>
 </section>
 
+<!-- ================= 선생님 화면 ================= -->
+<section id="screen-admin" class="screen">
+  <header class="sheet-head no-print">
+    <h2>선생님 화면</h2>
+    <span class="sheet-spacer"></span>
+    <button id="btnAdminPrint" class="btn small">인쇄하기</button>
+    <button id="btnAdminBack" class="btn small">돌아가기</button>
+  </header>
+
+  <div id="adminLogin" class="admin-login">
+    <p class="sheet-note">
+      구글 시트에 모인 반 전체 기록을 봅니다. <b>암호는 Apps Script 에 적어 두신 것</b>이에요.
+    </p>
+    <label class="name-row">
+      <span>암호</span>
+      <input id="adminPw" type="password" maxlength="40" placeholder="선생님 암호" autocomplete="off">
+    </label>
+    <button id="btnAdminLoad" class="btn primary big">기록 불러오기</button>
+    <p id="adminMsg" class="admin-msg"></p>
+  </div>
+
+  <div id="adminBody"></div>
+</section>
+
 <!-- ================= 증표 ================= -->
 <section id="screen-badges" class="screen">
   <header class="sheet-head">
@@ -172,6 +206,7 @@
   <header class="sheet-head no-print">
     <h2>탐험 기록</h2>
     <span class="sheet-spacer"></span>
+    <button id="btnSendSheet" class="btn small">시트로 보내기</button>
     <button id="btnPrint" class="btn small">인쇄하기</button>
     <button id="btnReportBack" class="btn small">돌아가기</button>
   </header>
@@ -202,6 +237,7 @@
 </div>
 
 <!-- 데이터 -->
+<script src="data/config.js"></script>
 <script src="data/tools.js"></script>
 <script src="data/monsters.js"></script>
 <script src="data/questions.js"></script>
@@ -218,6 +254,8 @@
 <script src="src/report.js"></script>
 <script src="src/missions.js"></script>
 <script src="src/badges.js"></script>
+<script src="src/sheet.js"></script>
+<script src="src/admin.js"></script>
 <script src="src/review.js"></script>
 <script src="src/tutorial.js"></script>
 <script src="src/world.js"></script>

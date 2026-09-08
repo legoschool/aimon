@@ -16,7 +16,7 @@ function renderReport(container) {
   head.innerHTML =
     "<h2>AI몬스터 탐험 기록</h2>" +
     "<p>" +
-    (save.name || "탐험가") +
+    (displayName() || "탐험가") +
     " · " +
     new Date().toLocaleDateString("ko-KR") +
     "</p>";
