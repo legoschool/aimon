@@ -573,6 +573,121 @@ function renderResult(correct, choice, dmg, loss, instant) {
     box.appendChild(again);
   }
 
+  // 가끔 "왜 그럴까?"를 한 번 더 묻는다 (맞혔을 때만)
+  const offerWhy = shouldOfferWhy(q, correct, battle.asked);
+
+  const btn = document.createElement("button");
+  btn.className = "btn primary";
+  btn.textContent = offerWhy ? "⭐ 보너스 — 왜 그럴까?" : "계속하기";
+  btn.onclick = offerWhy
+    ? function () { renderWhyBonus(q, dmg); }
+    : afterResult;
+  box.appendChild(btn);
+
+  p.appendChild(box);
+
+  // 해설도 읽고 넘어가게 한다. 배움은 여기서 일어나므로 문제보다 더 중요하다.
+  lockUntilRead(box, [btn], calcExplainMs(correct), "해설을 읽어요");
+}
+
+/* -----------------------------------------------------------
+   "왜?" 보너스
+
+   행동은 맞았는데 이유가 틀린 경우를 잡는 자리다.
+   맞히면 그 문제의 데미지가 2배. 틀려도 잃는 것은 없다.
+   이유를 생각해 본 것 자체가 이미 얻은 것이라 벌하지 않는다.
+   ----------------------------------------------------------- */
+function renderWhyBonus(q, dmg) {
+  clearLock();
+  sfx("dexOpen");
+
+  const p = panel();
+  p.innerHTML = "";
+
+  const wrap = document.createElement("div");
+  wrap.className = "q-wrap";
+
+  const tag = document.createElement("div");
+  tag.className = "q-tag";
+  tag.innerHTML =
+    '<span class="why-badge">⭐ 보너스</span>' +
+    "<span>맞히면 이번 공격이 2배가 돼요</span>";
+  wrap.appendChild(tag);
+
+  const qt = document.createElement("p");
+  qt.className = "q-question";
+  qt.textContent = q.why.question;
+  wrap.appendChild(qt);
+
+  const list = document.createElement("div");
+  list.className = "q-options";
+  q.why.options.forEach(function (opt, i) {
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.innerHTML = '<span class="opt-no">' + (i + 1) + "</span><span>" + opt + "</span>";
+    b.onclick = function () {
+      gradeWhy(q, dmg, i);
+    };
+    list.appendChild(b);
+  });
+  wrap.appendChild(list);
+  p.appendChild(wrap);
+
+  lockUntilRead(
+    wrap,
+    Array.prototype.slice.call(list.querySelectorAll(".opt")),
+    2200,
+    "이유를 생각해요"
+  );
+}
+
+function gradeWhy(q, dmg, choice) {
+  const correct = choice === q.why.answer;
+  let extra = 0;
+
+  if (correct) {
+    // 그 문제의 데미지만큼 한 번 더 (합쳐서 2배)
+    extra = Math.round(dmg.amount * (BALANCE.whyBonusMultiplier - 1));
+    battle.grip = Math.max(0, battle.grip - extra);
+    sfx("caught");
+    hitAnimation();
+  } else {
+    sfx("button");
+  }
+  updateGauges();
+
+  const p = panel();
+  p.innerHTML = "";
+
+  const box = document.createElement("div");
+  box.className = "result-box " + (correct ? "ok" : "why-miss");
+
+  const head = document.createElement("p");
+  head.className = "result-head";
+  head.textContent = correct
+    ? "이유까지 맞혔어요! 공격이 2배가 됐어요."
+    : "이유는 조금 달라요. 그래도 잃는 건 없어요.";
+  box.appendChild(head);
+
+  if (!correct) {
+    const right = document.createElement("p");
+    right.className = "result-right";
+    right.textContent = "이유: " + q.why.options[q.why.answer];
+    box.appendChild(right);
+  }
+
+  const ex = document.createElement("p");
+  ex.className = "result-explain";
+  ex.textContent = q.why.explanation;
+  box.appendChild(ex);
+
+  const d = document.createElement("p");
+  d.className = "result-dmg";
+  d.textContent = correct
+    ? "장악력을 " + extra + " 더 깎았어요! (합쳐서 " + (dmg.amount + extra) + ")"
+    : "행동을 고른 건 맞았으니 공격은 그대로예요.";
+  box.appendChild(d);
+
   const btn = document.createElement("button");
   btn.className = "btn primary";
   btn.textContent = "계속하기";
@@ -580,9 +695,7 @@ function renderResult(correct, choice, dmg, loss, instant) {
   box.appendChild(btn);
 
   p.appendChild(box);
-
-  // 해설도 읽고 넘어가게 한다. 배움은 여기서 일어나므로 문제보다 더 중요하다.
-  lockUntilRead(box, [btn], calcExplainMs(correct), "해설을 읽어요");
+  lockUntilRead(box, [btn], 1600, "이유를 읽어요");
 }
 
 function afterResult() {

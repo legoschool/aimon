@@ -44,6 +44,16 @@ const BALANCE = {
   /* 해설도 읽게 한다. 배움은 해설에서 일어나므로 여기가 더 중요하다. */
   explainLockWrongMs: 3500, // 틀렸을 때
   explainLockRightMs: 1200, // 맞았을 때
+
+  /* --- "왜?" 보너스 ---
+     맞힌 뒤 가끔 "왜 그럴까?"를 한 번 더 묻는다.
+     행동은 맞았는데 이유가 틀린 경우를 잡는 자리다.
+
+     모든 문제에 물으면 분량과 시간이 두 배가 되므로 가끔만 나온다.
+     맞히면 2배 공격, 틀려도 잃는 것은 없다.
+     이유를 생각해 본 것 자체가 이미 얻은 것이라 벌하지 않는다. */
+  whyChance: 0.35, // 맞힌 문제 중 이 비율로 보너스가 열린다
+  whyBonusMultiplier: 2, // 이유까지 맞히면 그 문제의 데미지가 2배
 };
 
 /* 판단볼 3종 */
@@ -109,6 +119,15 @@ function hasEnoughAnswers(asked) {
 /* 해설을 읽을 시간 */
 function calcExplainMs(isCorrect) {
   return isCorrect ? BALANCE.explainLockRightMs : BALANCE.explainLockWrongMs;
+}
+
+/* "왜?" 보너스를 열까?
+   맞힌 문제에만, 그 문제에 why 가 달려 있을 때만, 가끔.
+   첫 문제에는 열지 않는다 — 아직 게임에 익숙하지 않다. */
+function shouldOfferWhy(question, isCorrect, asked) {
+  if (!isCorrect || !question || !question.why) return false;
+  if (asked <= 1) return false;
+  return Math.random() < BALANCE.whyChance;
 }
 
 /* -----------------------------------------------------------

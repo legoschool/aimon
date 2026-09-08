@@ -360,6 +360,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
 .result-box { border: 3px solid var(--line); padding: 14px; }
 .result-box.ok { background: #eaf5ec; }
 .result-box.no { background: #fbeded; }
+.result-box.why-miss { background: #f6f2e4; }
+.result-box.why-miss .result-head { color: #7a5c0a; }
+
+/* "왜?" 보너스 */
+.why-badge {
+  background: #c9a227; color: #fff; font-weight: 800;
+  padding: 2px 9px; border: 2px solid var(--line);
+}
 .result-head { margin: 0 0 10px; font-size: 1.1rem; font-weight: 800; }
 .result-box.ok .result-head { color: var(--good); }
 .result-box.no .result-head { color: var(--bad); }
