@@ -67,6 +67,9 @@ function renderReport(container) {
   diag.innerHTML = diagnose(all);
   container.appendChild(diag);
 
+  /* ---- 얻은 증표 (인쇄에도 그대로 나온다) ---- */
+  appendBadgeSection(container);
+
   /* ---- 정화한 가치몬 ---- */
   if (dexCaughtCount() > 0) {
     container.appendChild(sectionTitle("내가 얻은 가치"));
@@ -88,6 +91,33 @@ function renderReport(container) {
       got.appendChild(row);
     });
     container.appendChild(got);
+  }
+
+  /* ---- 생각 열쇠를 쓴 문제 — 어디서 막혔는지 ---- */
+  const hinted = QUESTIONS.filter(function (q) {
+    return (save.hintIds || []).indexOf(q.id) !== -1;
+  });
+  if (hinted.length > 0) {
+    container.appendChild(sectionTitle("생각 열쇠를 쓴 문제 (" + hinted.length + "개)"));
+    const note = document.createElement("p");
+    note.className = "rep-subnote";
+    note.textContent =
+      "답을 알려주는 힌트가 아니라, 무엇을 따져봐야 하는지 되묻는 질문이에요. " +
+      "아이가 어느 상황에서 한 번 더 생각이 필요했는지 보여 줍니다.";
+    container.appendChild(note);
+
+    const hl = document.createElement("div");
+    hl.className = "rep-hints";
+    hinted.forEach(function (q) {
+      const item = document.createElement("div");
+      item.className = "rep-hint";
+      item.innerHTML =
+        '<p class="rh-tag">' + TYPES[q.type].name + " · " + TOOLS[q.tool].name + "</p>" +
+        '<p class="rh-sit">' + escapeHtml(q.situation) + "</p>" +
+        '<p class="rh-key">🔑 ' + escapeHtml(q.hint) + "</p>";
+      hl.appendChild(item);
+    });
+    container.appendChild(hl);
   }
 
   /* ---- 틀렸던 문제 다시 보기 ---- */

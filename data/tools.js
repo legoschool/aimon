@@ -2,11 +2,15 @@
    AI몬스터 — 판단 도구 & 상성표
    =========================================================== */
 
-/* 몬스터 속성 3종 */
+/* 몬스터 속성
+   앞의 셋이 본편이고, all 은 마지막 보스 전용이다.
+   세 주제를 관통하는 뿌리 — "스스로 생각하기를 멈춘 것" — 이라
+   특정 주제에 묶이지 않는다. */
 const TYPES = {
   copyright: { id: "copyright", name: "저작권",   accent: "#3a6ea5" }, // 파랑
   privacy:   { id: "privacy",   name: "개인정보", accent: "#c9642a" }, // 주황
   disinfo:   { id: "disinfo",   name: "허위정보", accent: "#6b4a9e" }, // 보라
+  all:       { id: "all",       name: "모든 주제", accent: "#c9a227" }, // 금색
 };
 
 /* 판단 도구 4종 = 포켓몬의 "기술 4개" 자리 */
@@ -41,10 +45,10 @@ const TOOLS = {
    비판적사고는 전부 1.0. 대신 오답 피해가 절반.
    ----------------------------------------------------------- */
 const TYPE_CHART = {
-  verify:    { disinfo: 1.5, copyright: 0.5, privacy: 1.0 },
-  respect:   { copyright: 1.5, privacy: 0.5, disinfo: 1.0 },
-  ownership: { privacy: 1.5, disinfo: 0.5, copyright: 1.0 },
-  critique:  { copyright: 1.0, privacy: 1.0, disinfo: 1.0 },
+  verify:    { disinfo: 1.5, copyright: 0.5, privacy: 1.0, all: 1.0 },
+  respect:   { copyright: 1.5, privacy: 0.5, disinfo: 1.0, all: 1.0 },
+  ownership: { privacy: 1.5, disinfo: 0.5, copyright: 1.0, all: 1.0 },
+  critique:  { copyright: 1.0, privacy: 1.0, disinfo: 1.0, all: 1.0 },
 };
 
 /* -----------------------------------------------------------

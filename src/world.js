@@ -28,8 +28,18 @@ const world = {
   lastZone: null,
 };
 
-/* 보스는 허위정보 숲 안쪽 고정 자리에 나타난다 */
+/* 가짜몬은 허위정보 숲 안쪽 고정 자리에 나타난다 */
 const BOSS_SPOT = { x: 17, y: 2 };
+
+/* 마지막 보스는 지도 한복판 — 두 길이 만나는 자리에 나타난다 */
+const FINAL_SPOT = { x: 11, y: 6 };
+
+/* 마지막 보스를 뺀 여섯 마리 중 몇 마리를 정화했는가 */
+function regularCaughtCount() {
+  return regularMonsters().filter(function (m) {
+    return isCaught(m.id);
+  }).length;
+}
 
 function initWorld(canvas) {
   world.ctx = setupCanvas(canvas, MAP_W * TILE, MAP_H * TILE, MAP_SCALE);
@@ -78,12 +88,21 @@ function spawnAll() {
   world.spawns = [];
   MONSTERS.forEach(function (m) {
     if (isCaught(m.id)) return;
+
+    // 마지막 보스 — 여섯을 모두 정화해야 한복판에 나타난다
+    if (m.finalBoss) {
+      if (!allRegularCaught()) return;
+      world.spawns.push({ id: m.id, x: FINAL_SPOT.x, y: FINAL_SPOT.y });
+      return;
+    }
+
+    // 가짜몬 — 3마리 이상 정화해야 나타나고, 자리는 고정이다
     if (m.boss) {
-      // 보스는 3마리 이상 정화해야 나타나고, 자리는 고정이다
-      if (dexCaughtCount() < 3) return;
+      if (regularCaughtCount() < 3) return;
       world.spawns.push({ id: m.id, x: BOSS_SPOT.x, y: BOSS_SPOT.y });
       return;
     }
+
     const spot = freeSpotIn(m.type, m.id);
     if (spot) world.spawns.push({ id: m.id, x: spot.x, y: spot.y });
   });
@@ -97,19 +116,29 @@ function updateSpawnAfterBattle(monsterId) {
     world.spawns = world.spawns.filter(function (s) {
       return s.id !== monsterId;
     });
-    // 3마리를 채우는 순간 보스가 등장한다
-    if (!world.spawns.some(function (s) { return getMonster(s.id).boss; })) {
-      const boss = MONSTERS.filter(function (x) { return x.boss; })[0];
-      if (boss && !isCaught(boss.id) && dexCaughtCount() >= 3) {
-        world.spawns.push({ id: boss.id, x: BOSS_SPOT.x, y: BOSS_SPOT.y });
-        return "boss";
-      }
+
+    const onMap = function (pred) {
+      return world.spawns.some(function (s) { return pred(getMonster(s.id)); });
+    };
+
+    // 여섯을 모두 채우는 순간 마지막 보스가 한복판에 나타난다
+    const last = finalBossMonster();
+    if (last && !isCaught(last.id) && allRegularCaught() && !onMap(function (x) { return x.finalBoss; })) {
+      world.spawns.push({ id: last.id, x: FINAL_SPOT.x, y: FINAL_SPOT.y });
+      return "final";
+    }
+
+    // 3마리를 채우는 순간 가짜몬이 등장한다
+    const boss = MONSTERS.filter(function (x) { return x.boss; })[0];
+    if (boss && !isCaught(boss.id) && regularCaughtCount() >= 3 && !onMap(function (x) { return x.boss; })) {
+      world.spawns.push({ id: boss.id, x: BOSS_SPOT.x, y: BOSS_SPOT.y });
+      return "boss";
     }
     return null;
   }
 
   // 놓친 몬스터는 자리를 옮겨 다시 도전할 수 있게 한다 (보스는 제자리)
-  if (m.boss) return null;
+  if (m.boss || m.finalBoss) return null;
   const spot = freeSpotIn(m.type, monsterId);
   if (!spot) return null;
   world.spawns.forEach(function (s) {
@@ -224,16 +253,26 @@ function bumpIntoMonster() {
    길잡이 문구
    ----------------------------------------------------------- */
 function remainingHint() {
-  const left = MONSTERS.filter(function (m) {
+  const last = finalBossMonster();
+
+  // 마지막 관문이 열렸는가
+  if (last && !isCaught(last.id) && allRegularCaught()) {
+    return "지도 한복판에 " + last.name + "이(가) 나타났어요. 마지막 관문이에요!";
+  }
+  if (last && isCaught(last.id)) {
+    return "모든 AI몬스터를 정화했어요. 당신은 진짜 " + last.purified.name + "예요!";
+  }
+
+  const left = regularMonsters().filter(function (m) {
     return !isCaught(m.id);
   });
-  if (left.length === 0) return "모든 AI몬스터를 정화했어요!";
+  if (left.length === 0) return "모든 그림자몬을 정화했어요!";
 
   const boss = left.filter(function (m) { return m.boss; })[0];
   if (left.length === 1 && boss) {
     return "마지막 " + boss.name + "이(가) 허위정보 데이터숲에서 기다려요.";
   }
-  if (boss && dexCaughtCount() < 3) {
+  if (boss && regularCaughtCount() < 3) {
     return "아직 " + left.length + "마리 · " + boss.name + "은(는) 3마리를 정화해야 나타나요.";
   }
   return "아직 " + left.length + "마리 남았어요. 풀숲 위의 몬스터에게 다가가 보세요.";

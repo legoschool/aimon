@@ -122,8 +122,33 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
   background: var(--panel); border: 3px solid var(--line);
   padding: 5px 10px; font-size: .85rem; font-weight: 700;
 }
-.hud-hint { font-size: .8rem; color: var(--ink-soft); flex-basis: 100%; }
 .hud-spacer { flex: 1; }
+
+/* -----------------------------------------------------------
+   QUEST 배너 — 지금 할 일
+   작은 회색 글씨로는 아이가 안 읽는다. 눈에 띄게 키웠다.
+   ----------------------------------------------------------- */
+.quest {
+  display: flex; align-items: stretch; gap: 0;
+  border: 3px solid var(--line); box-shadow: var(--shadow-sm);
+  background: var(--panel); margin-bottom: 10px; overflow: hidden;
+}
+.quest.done { background: #eaf3ea; border-color: var(--good); }
+.q-label {
+  flex: 0 0 auto; display: grid; place-items: center;
+  background: var(--ink); color: var(--panel);
+  font-size: .78rem; font-weight: 800; letter-spacing: 1px;
+  padding: 0 12px;
+}
+.quest.done .q-label { background: var(--good); }
+.q-body { flex: 1; min-width: 0; padding: 8px 12px; }
+.q-title { margin: 0; font-size: 1.02rem; font-weight: 800; line-height: 1.3; }
+.q-desc { margin: 2px 0 0; font-size: .84rem; color: var(--ink-soft); line-height: 1.5; }
+.q-progress {
+  flex: 0 0 auto; display: grid; place-items: center;
+  padding: 0 14px; font-weight: 800; font-size: .95rem;
+  border-left: 3px dashed var(--line); white-space: nowrap;
+}
 
 .map-stage {
   position: relative;
@@ -271,6 +296,22 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
   font-size: .95rem;
 }
 .q-question { margin: 0 0 14px; font-weight: 800; font-size: 1.02rem; }
+/* 생각 열쇠 — 답이 아니라 되묻는 질문 */
+.hint-box { margin: 0 0 12px; }
+.hint-btn {
+  font: inherit; font-size: .8rem; font-weight: 800; cursor: pointer;
+  background: #f4eac8; border: 2px solid var(--line);
+  padding: 5px 10px; color: var(--ink);
+}
+.hint-btn:hover { background: #f9f2d8; }
+.hint-text {
+  display: none; margin: 8px 0 0; padding: 10px 12px;
+  background: #f9f2d8; border-left: 6px solid #c9a227;
+  font-size: .9rem; line-height: 1.65;
+}
+.hint-box.open .hint-text { display: block; }
+.hint-box.open .hint-btn { background: #e8dcae; }
+
 .q-options { display: grid; gap: 8px; }
 .opt {
   font: inherit; text-align: left; cursor: pointer;
@@ -388,6 +429,32 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
 }
 
 /* -----------------------------------------------------------
+   증표 — 사라지지 않는 보상
+   ----------------------------------------------------------- */
+.badge-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.badge-card {
+  background: var(--panel); border: 3px solid var(--line); box-shadow: var(--shadow-sm);
+  padding: 12px 10px; text-align: center;
+}
+.badge-card.locked { background: #ded9c8; }
+.badge-card.top.got { background: #fbf3d8; border-color: #c9a227; box-shadow: 3px 3px 0 #c9a227; }
+.badge-img { width: 48px; height: 48px; }
+.badge-name { margin: 6px 0 3px; font-weight: 800; font-size: .92rem; }
+.badge-card.top.got .badge-name { color: #8a6d10; }
+.badge-desc { margin: 0; font-size: .74rem; color: var(--ink-soft); line-height: 1.5; }
+.badge-card.locked .badge-desc { opacity: .7; }
+
+.rep-badges { display: grid; gap: 10px; }
+.rep-badge {
+  display: flex; gap: 12px; align-items: center;
+  border: 3px solid var(--line); background: var(--paper); padding: 10px;
+}
+.rep-badge.top { background: #fbf3d8; border-color: #c9a227; }
+.rep-badge img { width: 36px; height: 36px; flex: 0 0 36px; }
+.rep-badge b { display: block; }
+.rep-badge span { font-size: .82rem; color: var(--ink-soft); line-height: 1.5; }
+
+/* -----------------------------------------------------------
    기록 (리포트)
    ----------------------------------------------------------- */
 .report-body {
@@ -437,6 +504,20 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
 .rep-value img { width: 48px; height: 48px; flex: 0 0 48px; }
 .rep-value b { display: block; }
 .rep-value span { font-size: .84rem; color: var(--ink-soft); line-height: 1.5; }
+
+.rep-subnote {
+  margin: -6px 0 12px; font-size: .82rem; color: var(--ink-soft); line-height: 1.6;
+}
+.rep-hints { display: grid; gap: 10px; }
+.rep-hint { border: 3px solid var(--line); padding: 10px 12px; background: #fdfaf0; }
+.rep-hint p { margin: 0 0 5px; }
+.rh-tag { font-size: .74rem; font-weight: 800; color: var(--ink-soft); }
+.rh-sit { font-size: .87rem; }
+.rh-key {
+  font-size: .86rem; font-weight: 700; color: #7a5c0a;
+  background: #f9f2d8; border-left: 5px solid #c9a227;
+  padding: 6px 9px; margin-bottom: 0 !important;
+}
 
 .rep-wrongs { display: grid; gap: 12px; }
 .rep-wrong { border: 3px solid var(--line); padding: 12px; background: #fff; }
@@ -600,7 +681,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
   #battleCanvas { width: 168px; height: 168px; }
   .mon-info, .me-info { width: 100%; }
   .tool-grid { grid-template-columns: 1fr; }
-  .dex-grid { grid-template-columns: repeat(2, 1fr); }
+  .dex-grid, .badge-grid { grid-template-columns: repeat(2, 1fr); }
   .rep-tiles { grid-template-columns: 1fr; }
   .game-title { font-size: 2.3rem; }
 
@@ -622,6 +703,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
   .no-print, .sheet-head { display: none !important; }
   .screen { max-width: none; }
   .report-body { border: none; box-shadow: none; padding: 0; }
-  .rep-wrong, .rep-tile, .rep-value, .rep-diag { break-inside: avoid; }
+  .rep-wrong, .rep-tile, .rep-value, .rep-diag,
+  .rep-badge, .rep-hint { break-inside: avoid; }
   .rep-section { break-after: avoid; }
 }

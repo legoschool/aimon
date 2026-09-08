@@ -42,11 +42,15 @@ function blankSave(name) {
       critique: { right: 0, asked: 0 },
     },
     wrongIds: [],
+    hintIds: [], // 생각 열쇠를 쓴 문항 (어디서 막히는지 선생님께 보여 준다)
     battles: 0,
     startedAt: null,
     lastPlayed: null,
     tutorial: { intro: false, battle: false, catchTip: false },
     missionsDone: [], // 달성한 박사님 의뢰 id
+    badges: [], // 얻은 증표 id — 사라지지 않고 기록·인쇄에 남는다
+    reviewCleared: 0, // 복습으로 지운 문항 수 (누적)
+    perfectCatch: false, // 한 문제도 안 틀리고 정화한 적이 있는가
   };
 }
 

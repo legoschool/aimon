@@ -35,6 +35,7 @@ const battle = {
   lastId: null,
   question: null,
   tool: null,
+  lastTool: null, // 방금 쓴 도구 — 마지막 보스전에서는 연속으로 못 쓴다
   instantCount: 0, // 잠금이 풀리자마자 튕기듯 누른 횟수
   phase: "intro",
   purifying: false,
@@ -61,6 +62,7 @@ function startBattle(monster, dom, onEnd) {
   battle.lastId = null;
   battle.question = null;
   battle.tool = null;
+  battle.lastTool = null;
   battle.instantCount = 0;
   resetUnlock();
   clearLock();
@@ -210,6 +212,54 @@ function panel() {
 
 /* 읽는 동안 잠그는 장치는 src/readlock.js 에 있다 (복습 모드와 함께 쓴다) */
 
+/* -----------------------------------------------------------
+   생각 열쇠 — 답 대신 질문을 돌려준다
+
+   보기를 지워 주는 힌트는 넣지 않는다. 그건 생각을 건너뛰게 만들어서
+   이 게임이 하려는 일과 정반대다.
+   대신 "무엇을 따져봐야 하는지"를 되묻는다.
+
+   공짜이고 횟수 제한도 없다. 답을 주지 않으니 많이 볼수록 좋다.
+   전에 틀린 적 있는 문제라면 처음부터 펼쳐 둔다 — 막힌 아이를 그냥 두지 않는다.
+   (복습 모드도 이 함수를 쓴다)
+   ----------------------------------------------------------- */
+function buildHintBox(q, container) {
+  if (!q.hint) return;
+
+  const seenWrong = save.wrongIds.indexOf(q.id) !== -1;
+
+  const box = document.createElement("div");
+  box.className = "hint-box" + (seenWrong ? " open" : "");
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "hint-btn";
+  btn.textContent = seenWrong ? "🔑 생각 열쇠" : "🔑 생각 열쇠 — 막히면 눌러요";
+  box.appendChild(btn);
+
+  const text = document.createElement("p");
+  text.className = "hint-text";
+  text.textContent = q.hint;
+  box.appendChild(text);
+
+  if (seenWrong) markHintUsed(q.id);
+
+  btn.onclick = function () {
+    sfx("button");
+    box.classList.toggle("open");
+    if (box.classList.contains("open")) markHintUsed(q.id);
+  };
+
+  container.appendChild(box);
+}
+
+function markHintUsed(id) {
+  if (save.hintIds.indexOf(id) === -1) {
+    save.hintIds.push(id);
+    writeSave();
+  }
+}
+
 function showMessage(title, body, btnLabel, next) {
   clearLock();
   const p = panel();
@@ -251,9 +301,16 @@ function renderToolChoice() {
 
   const avail = availableTools(battle.monster, battle.usedIds);
 
+  // 마지막 보스에게는 한 가지 눈으로 맞설 수 없다.
+  // 방금 쓴 도구는 다음 문제에서 잠긴다 — 네 관점을 번갈아 써야 이긴다.
+  const isFinal = !!battle.monster.finalBoss;
+  const blocked = isFinal ? battle.lastTool : null;
+
   const head = document.createElement("p");
   head.className = "panel-head";
-  head.textContent = "어떤 판단 도구로 맞설까?";
+  head.textContent = isFinal
+    ? "생각멈춤몬에게는 한 가지 눈으로 맞설 수 없어요. 방금 쓴 도구는 잠깁니다."
+    : "어떤 판단 도구로 맞설까?";
   p.appendChild(head);
 
   const grid = document.createElement("div");
@@ -265,7 +322,8 @@ function renderToolChoice() {
     const left = getQuestions(battle.monster.type, id).filter(function (q) {
       return battle.usedIds.indexOf(q.id) === -1;
     }).length;
-    const usable = avail.indexOf(id) !== -1;
+    const justUsed = blocked === id;
+    const usable = avail.indexOf(id) !== -1 && !justUsed;
 
     const btn = document.createElement("button");
     btn.className = "tool-btn" + (usable ? "" : " locked");
@@ -288,7 +346,9 @@ function renderToolChoice() {
       boostRow +
       '<span class="tool-meta">' +
       (mult === 1.5 ? '<b class="good">효과 굉장</b>' : mult === 0.5 ? '<b class="bad">효과 별로</b>' : "<b>보통</b>") +
-      '<span class="tool-left">' + (usable ? "남은 문제 " + left : "문제 없음") + "</span>" +
+      '<span class="tool-left">' +
+      (justUsed ? "방금 썼어요" : usable ? "남은 문제 " + left : "문제 없음") +
+      "</span>" +
       "</span>";
 
     btn.onclick = function () {
@@ -349,6 +409,7 @@ function askQuestion(toolId) {
 
   battle.question = q;
   battle.tool = toolId;
+  battle.lastTool = toolId; // 마지막 보스전에서는 이 도구가 다음 턴에 잠긴다
   battle.phase = "question";
   // 전에 만난 문제인지 먼저 확인해 둔다 (다시 만난 문제는 절반만 잠근다)
   const seenBefore = battle.seenIds.indexOf(q.id) !== -1;
@@ -378,6 +439,8 @@ function askQuestion(toolId) {
   qt.className = "q-question";
   qt.textContent = q.question;
   wrap.appendChild(qt);
+
+  buildHintBox(q, wrap);
 
   const list = document.createElement("div");
   list.className = "q-options";
@@ -737,6 +800,13 @@ function onEscaped(shakes) {
 function onCaught() {
   battle.ball = null;
   markCaught(battle.monster.id);
+
+  // 한 문제도 틀리지 않고 잡았는가 (무결점 증표 조건)
+  if (battle.asked > 0 && battle.right === battle.asked) {
+    save.perfectCatch = true;
+    writeSave();
+  }
+
   drawBattle();
   sfx("caught");
 

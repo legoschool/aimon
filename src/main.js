@@ -13,9 +13,10 @@ let current = "title";
    시작
    ----------------------------------------------------------- */
 window.addEventListener("DOMContentLoaded", function () {
-  ["title", "map", "battle", "dex", "report", "class", "missions", "review"].forEach(function (id) {
-    screens[id] = document.getElementById("screen-" + id);
-  });
+  ["title", "map", "battle", "dex", "report", "class", "missions", "review", "badges"]
+    .forEach(function (id) {
+      screens[id] = document.getElementById("screen-" + id);
+    });
 
   el.nameInput = document.getElementById("nameInput");
   el.btnStart = document.getElementById("btnStart");
@@ -28,11 +29,11 @@ window.addEventListener("DOMContentLoaded", function () {
   el.zoneLabel = document.getElementById("zoneLabel");
   el.hudDex = document.getElementById("hudDex");
   el.hudBalls = document.getElementById("hudBalls");
-  el.hudHint = document.getElementById("hudHint");
   el.hudName = document.getElementById("hudName");
   el.hudMission = document.getElementById("hudMission");
   el.missionList = document.getElementById("missionList");
   el.reviewBody = document.getElementById("reviewBody");
+  el.badgeBody = document.getElementById("badgeBody");
 
   el.dexGrid = document.getElementById("dexGrid");
   el.reportBody = document.getElementById("reportBody");
@@ -73,6 +74,8 @@ window.addEventListener("DOMContentLoaded", function () {
   document.getElementById("btnMissions").onclick = function () { openMissions("map"); };
   document.getElementById("btnMissionsBack").onclick = closeOverlay;
   document.getElementById("btnReview").onclick = function () { openReview("map"); };
+  document.getElementById("btnBadges").onclick = function () { openBadges("map"); };
+  document.getElementById("btnBadgesBack").onclick = closeOverlay;
   document.getElementById("btnReviewBack").onclick = function () {
     clearLock();
     closeOverlay();
@@ -209,6 +212,12 @@ function openMissions(from) {
   renderMissions(el.missionList);
   show("missions");
 }
+function openBadges(from) {
+  sfx("dexOpen");
+  overlayFrom = from;
+  renderBadges(el.badgeBody);
+  show("badges");
+}
 function openReview(from) {
   sfx("button");
   overlayFrom = from;
@@ -264,10 +273,27 @@ function updateHud() {
   rBtn.textContent = n > 0 ? "복습 " + n : "복습";
   rBtn.classList.toggle("has-work", n > 0);
 
+  renderQuestBanner();
+}
+
+/* 지금 할 일을 크게 보여 준다 */
+function renderQuestBanner() {
+  const box = document.getElementById("questBanner");
   const now = currentMission();
-  el.hudHint.textContent = now
-    ? "지금 할 일 — " + now.title + " : " + now.desc
-    : remainingHint();
+
+  if (now) {
+    box.classList.remove("done");
+    box.querySelector(".q-label").textContent = "QUEST";
+    box.querySelector(".q-title").textContent = now.title;
+    box.querySelector(".q-desc").textContent = now.desc;
+    box.querySelector(".q-progress").textContent = now.progress(save);
+  } else {
+    box.classList.add("done");
+    box.querySelector(".q-label").textContent = "CLEAR";
+    box.querySelector(".q-title").textContent = "의뢰를 모두 마쳤어요!";
+    box.querySelector(".q-desc").textContent = remainingHint();
+    box.querySelector(".q-progress").textContent = "★";
+  }
 }
 
 let flashTimer = null;
@@ -305,12 +331,13 @@ function onEncounter(monster) {
 
 function onBattleEnd(reason, refilled) {
   // 잡았으면 맵에서 없애고, 놓쳤으면 같은 숲의 다른 자리로 옮긴다
-  const bossAppeared = updateSpawnAfterBattle(battle.monster.id) === "boss";
+  const appeared = updateSpawnAfterBattle(battle.monster.id);
 
   show("map");
   drawWorld();
 
   const cleared = checkMissions(); // 의뢰 확인 (보상까지 지급)
+  const newBadges = checkBadges(); // 증표 확인 (사라지지 않는 보상)
   updateHud();
 
   const lines = {
@@ -334,7 +361,15 @@ function onBattleEnd(reason, refilled) {
     delay += 2800;
   });
 
-  if (bossAppeared) {
+  newBadges.forEach(function (b) {
+    setTimeout(function () {
+      sfx("purify");
+      flash("🏅 증표 획득 — " + b.name + "  (기록에 남아요)");
+    }, delay);
+    delay += 2800;
+  });
+
+  if (appeared === "boss") {
     setTimeout(function () {
       sfx("encounter");
       flash("허위정보 데이터숲에 가짜몬이 나타났어요!");
@@ -342,6 +377,15 @@ function onBattleEnd(reason, refilled) {
     delay += 2800;
   }
 
+  if (appeared === "final") {
+    setTimeout(function () {
+      sfx("encounter");
+      flash("지도 한복판이 어두워졌어요… 생각멈춤몬이 나타났습니다!");
+    }, delay);
+    delay += 3200;
+  }
+
+  // 마지막 보스까지 정화하면 기록을 펼쳐 보여 준다
   if (dexCaughtCount() === MONSTERS.length) {
     setTimeout(function () {
       openReport("map");

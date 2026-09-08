@@ -344,6 +344,78 @@ const MONSTERS = [
   },
 ];
 
+/* ========== 🌑 마지막 관문 ==========
+   여섯 그림자를 관통하는 뿌리.
+   복붙도, 막 올림도, 그럴싸도 결국 "스스로 생각하기를 멈춘 자리"에서 나온다.
+   그래서 마지막에 이것을 둔다. */
+MONSTERS.push({
+  id: "meomchum",
+  name: "생각멈춤몬",
+  type: "all",
+  level: 15,
+  maxGrip: 200,
+  finalBoss: true,
+  desc: "AI가 주는 답을 그냥 받아 적게 만든다. 여섯 그림자가 모두 여기서 나왔다.",
+  look: "눈을 감고 입을 다문 커다란 형체. 아래에 금빛 띠가 잠들어 있다.",
+  sprite: [
+    "..kkkkkkkkkkkk..",
+    ".kwwwwwwwwwwwwk.",
+    "kwwwwwwwwwwwwwwk",
+    "kwwwwwwwwwwwwwwk",
+    "kwkkkkwwwwkkkkwk",
+    "kwwwwwwwwwwwwwwk",
+    "kwwwwwwwwwwwwwwk",
+    "kwwkkkkkkkkkkwwk",
+    "kwwwwwwwwwwwwwwk",
+    "kwwwwwwwwwwwwwwk",
+    ".kwwwwwwwwwwwwk.",
+    "..kaaaaaaaaaak..",
+    ".kaaaaaaaaaaaak.",
+    ".kaaaaaaaaaaaak.",
+    ".kkkk......kkkk.",
+    "..kk........kk..",
+  ],
+  purified: {
+    id: "saenggak",
+    name: "생각지기",
+    desc: "그대로 믿지 않고 한 번 더 생각하는 힘.",
+    lesson:
+      "AI가 아무리 똑똑해도 무엇이 옳은지 정하는 건 사람이에요. 그대로 믿지 않고 한 번 더 생각하는 그 힘이, 나를 나답게 만듭니다.",
+    sprite: [
+      "..kkkkkkkkkkkk..",
+      ".kwwwwwwwwwwwwk.",
+      "kwwwwwwwwwwwwwwk",
+      "kwwwaawwwwaawwwk",
+      "kwwwaawwwwaawwwk",
+      "kwwwwwwwwwwwwwwk",
+      "kwwwwwwwwwwwwwwk",
+      "kwwaawwwwwwwwaak",
+      "kwwwaaaaaaaaawwk",
+      "kwwwwwwwwwwwwwwk",
+      ".kwwwwwwwwwwwwk.",
+      "..kaaaaaaaaaak..",
+      ".kaaaaaaaaaaaak.",
+      ".kaaaaaaaaaaaak.",
+      ".kkkk......kkkk.",
+      "..kk........kk..",
+    ],
+  },
+});
+
+/* 마지막 보스를 뺀 여섯 마리 — 도감·의뢰의 기준이 된다 */
+function regularMonsters() {
+  return MONSTERS.filter((m) => !m.finalBoss);
+}
+
+function finalBossMonster() {
+  return MONSTERS.filter((m) => m.finalBoss)[0];
+}
+
+/* 여섯을 모두 정화했는가 (마지막 보스가 나타나는 조건) */
+function allRegularCaught() {
+  return regularMonsters().every((m) => isCaught(m.id));
+}
+
 /* 속성별로 몬스터 꺼내기 */
 function getMonstersByType(typeId) {
   return MONSTERS.filter((m) => m.type === typeId);

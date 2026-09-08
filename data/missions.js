@@ -75,9 +75,34 @@ const MISSIONS = [
   },
   {
     id: "m6",
-    title: "모두 정화",
-    desc: "AI몬스터 6마리를 모두 정화해 도감을 채우세요.",
-    goal: function (s) { return s.caught.length >= MONSTERS.length; },
-    progress: function (s) { return s.caught.length + " / " + MONSTERS.length; },
+    title: "그림자를 모두 걷어내기",
+    desc: "그림자몬 6마리를 모두 정화해 도감을 채우세요.",
+    goal: function (s) {
+      return regularMonsters().every(function (m) {
+        return s.caught.indexOf(m.id) !== -1;
+      });
+    },
+    progress: function (s) {
+      const n = regularMonsters().filter(function (m) {
+        return s.caught.indexOf(m.id) !== -1;
+      }).length;
+      return n + " / " + regularMonsters().length;
+    },
+    reward: { ball: "sure", count: 1, label: "확신볼 1개" },
+  },
+  {
+    id: "m7",
+    title: "마지막 관문",
+    desc: "지도 한복판에 나타난 생각멈춤몬을 정화하세요. 네 가지 판단 도구를 번갈아 써야 해요.",
+    goal: function (s) {
+      const last = finalBossMonster();
+      return !!last && s.caught.indexOf(last.id) !== -1;
+    },
+    progress: function (s) {
+      const last = finalBossMonster();
+      if (!last) return "-";
+      if (s.caught.indexOf(last.id) !== -1) return "1 / 1";
+      return allRegularCaught() ? "지금 열렸어요!" : "0 / 1";
+    },
   },
 ];

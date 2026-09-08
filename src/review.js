@@ -126,6 +126,8 @@ function renderReviewQuestion() {
   qt.textContent = q.question;
   wrap.appendChild(qt);
 
+  buildHintBox(q, wrap); // 복습에서는 전에 틀린 문제이므로 처음부터 펼쳐진다
+
   const list = document.createElement("div");
   list.className = "q-options";
   q.options.forEach(function (opt, i) {
@@ -161,6 +163,7 @@ function gradeReview(choice) {
     if (at !== -1) {
       save.wrongIds.splice(at, 1);
       review.cleared.push(q.id);
+      save.reviewCleared = (save.reviewCleared || 0) + 1; // 복습왕 증표 조건
       writeSave();
     }
     sfx("correct");
@@ -238,6 +241,8 @@ function renderReviewDone() {
   if (allClear) save.balls.reason += 1;
   if (basic > 0 || allClear) writeSave();
 
+  const newBadges = checkBadges(); // 복습왕 증표는 여기서 나온다
+
   const box = document.createElement("div");
   box.className = "msg-box";
 
@@ -251,6 +256,10 @@ function renderReviewDone() {
     review.queue.length + "문제 중 <b>" + review.right + "문제</b>를 맞혔어요.<br>" +
     "기록에서 <b>" + review.cleared.length + "문제</b>를 지웠어요." +
     (reward ? "<br><br>보상 — <b>" + reward + "</b>" : "") +
+    (newBadges.length
+      ? "<br><br>🏅 증표 획득 — <b>" +
+        newBadges.map(function (b) { return b.name; }).join(", ") + "</b>"
+      : "") +
     (wrongCount() > 0
       ? "<br><br>아직 " + wrongCount() + "문제가 남았어요. 언제든 다시 도전해요."
       : "<br><br>틀린 문제를 모두 지웠어요. 정말 잘했어요!") +

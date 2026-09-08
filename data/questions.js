@@ -43,6 +43,7 @@ const QUESTIONS = [
     answer: 0,
     explanation: "독서록은 내가 무엇을 느꼈는지 쓰는 글이에요. AI가 대신 느껴 줄 수는 없어요. 막힐 때 물어보는 건 좋지만, 느낌만큼은 내가 써야 내 글이 됩니다.",
     wrongHint: "AI가 썼다고 밝히더라도, 내가 읽고 느낀 것을 대신할 수는 없어요.",
+    hint: "독서록은 무엇을 쓰는 글일까요? 그 '무엇'을 AI가 대신해 줄 수 있을까요?",
   },
   {
     id: "cr_02", type: "copyright", tool: "respect", level: "easy",
@@ -57,6 +58,7 @@ const QUESTIONS = [
     answer: 3,
     explanation: "그림에도 그린 사람이 있어요. 크기를 줄이거나 내 이름을 덧붙여도 남의 그림은 남의 것입니다. 직접 그리거나 자유롭게 쓸 수 있는 그림을 찾아 쓰세요.",
     wrongHint: "작게 넣거나 이름을 덧붙인다고 내 그림이 되지는 않아요.",
+    hint: "그 그림을 그린 사람이 지금 내가 하려는 일을 본다면 어떤 기분일까요?",
   },
   {
     id: "cr_03", type: "copyright", tool: "respect", level: "hard",
@@ -71,6 +73,7 @@ const QUESTIONS = [
     answer: 1,
     explanation: "노래에도 만든 사람이 있어요. 짧게 넣거나 제목을 적어 두는 것으로 허락을 받은 게 되지는 않습니다. '마음껏 써도 된다'고 표시된 음악을 찾아 쓰면 마음이 편해요.",
     wrongHint: "'짧으니까', '우리끼리니까'는 허락을 대신하지 못해요.",
+    hint: "'조금만'이나 '우리끼리만'이 허락을 대신할 수 있을까요?",
   },
   {
     id: "cr_04", type: "copyright", tool: "verify", level: "easy",
@@ -85,6 +88,7 @@ const QUESTIONS = [
     answer: 2,
     explanation: "검색에 나온다고 무료가 아니에요. 사진마다 '어디까지 써도 되는지'가 적혀 있으니, 그것을 확인하는 게 먼저입니다.",
     wrongHint: "내려받을 수 있다는 것과 써도 된다는 것은 전혀 다른 이야기예요.",
+    hint: "볼 수 있다는 것과 써도 된다는 것은 같은 말일까요?",
   },
   {
     id: "cr_05", type: "copyright", tool: "verify", level: "hard",
@@ -99,6 +103,7 @@ const QUESTIONS = [
     answer: 1,
     explanation: "서명 흔적이 남았다는 건 원래 있던 작품을 많이 닮게 만들었다는 신호일 수 있어요. 지우고 쓰면 오히려 더 위험합니다.",
     wrongHint: "흔적을 지우는 건 문제를 없애는 게 아니라 감추는 거예요.",
+    hint: "그 흔적은 왜 거기 남아 있을까요? 지우면 없던 일이 될까요?",
   },
   {
     id: "cr_06", type: "copyright", tool: "verify", level: "easy",
@@ -113,6 +118,7 @@ const QUESTIONS = [
     answer: 0,
     explanation: "친구가 만든 자료가 아니라면 친구에게는 허락해 줄 권한이 없어요. 누가 만든 것인지부터 확인해야 합니다.",
     wrongHint: "빌려준 사람이 주인이 아닐 수도 있어요.",
+    hint: "허락은 아무나 해 줄 수 있는 걸까요? 누가 해 줄 수 있을까요?",
   },
   {
     id: "cr_07", type: "copyright", tool: "ownership", level: "easy",
@@ -127,6 +133,7 @@ const QUESTIONS = [
     answer: 1,
     explanation: "내가 속상했다면 남도 똑같이 속상해요. 이 마음을 기억하는 것이 남의 것을 함부로 쓰지 않는 가장 확실한 이유가 됩니다.",
     wrongHint: "당한 대로 갚으면 나도 똑같은 사람이 돼요.",
+    hint: "그때 내 기분을 떠올려 보세요. 그 마음이 나에게 무엇을 알려 주나요?",
   },
   {
     id: "cr_08", type: "copyright", tool: "ownership", level: "hard",
@@ -141,6 +148,7 @@ const QUESTIONS = [
     answer: 3,
     explanation: "대회는 '누가 잘 그리나'를 보는 자리예요. AI가 그린 그림을 내면 내 실력을 겨루는 것이 아니게 됩니다. AI를 써도 되는지는 대회마다 규칙이 다르니 먼저 확인해야 해요.",
     wrongHint: "조금 손을 댔다고 해서 내가 그린 그림이 되지는 않아요.",
+    hint: "대회는 무엇을 겨루는 자리인가요?",
   },
   {
     id: "cr_09", type: "copyright", tool: "critique", level: "hard",
@@ -155,6 +163,7 @@ const QUESTIONS = [
     answer: 1,
     explanation: "출처를 적는 건 기본이지 만능 열쇠가 아니에요. 얼마나, 어떻게 가져다 쓰는지도 함께 봐야 합니다.",
     wrongHint: "출처는 '적었으니 됐다'가 아니라 '어디서 왔는지 밝힌다'는 뜻이에요.",
+    hint: "출처를 적는 건 무엇을 위한 일일까요? 그것만으로 다 해결될까요?",
   },
   {
     id: "cr_10", type: "copyright", tool: "critique", level: "hard",
@@ -169,6 +178,7 @@ const QUESTIONS = [
     answer: 2,
     explanation: "AI는 사람들이 만든 수많은 그림을 보고 배웠어요. 그래서 결과물이 누군가의 작품과 많이 닮을 수 있습니다. '주인이 없다'고 단정하기 어려워요.",
     wrongHint: "새로 만들어진 것처럼 보여도, 무엇을 보고 만들었는지가 남아 있어요.",
+    hint: "AI는 무엇을 보고 그림 그리는 법을 배웠을까요?",
   },
 
   /* ================= 🤝 개인정보 ================= */
@@ -185,6 +195,7 @@ const QUESTIONS = [
     answer: 0,
     explanation: "사진 속 얼굴에도 주인이 있어요. \"이거 올려도 돼?\" 한마디면 충분합니다.",
     wrongHint: "아는 사람들만 보는 방이라도 물어보는 건 똑같이 필요해요.",
+    hint: "그 사진의 주인은 찍은 사람일까요, 찍힌 사람일까요?",
   },
   {
     id: "pv_02", type: "privacy", tool: "respect", level: "easy",
@@ -199,6 +210,7 @@ const QUESTIONS = [
     answer: 2,
     explanation: "사진 속 사람이 싫다고 하면 그것으로 충분한 이유예요. 이유를 설명해야 할 사람은 지워 달라고 한 친구가 아닙니다.",
     wrongHint: "다른 방으로 옮겨 올리는 건 지운 게 아니에요.",
+    hint: "친구가 왜 그러는지 꼭 알아야만 지울 수 있을까요?",
   },
   {
     id: "pv_03", type: "privacy", tool: "respect", level: "hard",
@@ -213,6 +225,7 @@ const QUESTIONS = [
     answer: 1,
     explanation: "친구 사진을 앱에 넣는 순간 그 사진은 내 손을 떠나요. 재미있게 바꾸는 것도 사진 주인이 허락해야 할 일입니다.",
     wrongHint: "결과를 보여 주는 건 허락을 받은 것과 달라요. 넣기 '전에' 물어봐야 해요.",
+    hint: "앱에 넣는 순간 그 사진은 어디로 갈까요?",
   },
   {
     id: "pv_04", type: "privacy", tool: "ownership", level: "easy",
@@ -227,6 +240,7 @@ const QUESTIONS = [
     answer: 3,
     explanation: "친구들 이름은 내가 마음대로 쓸 수 있는 내 정보가 아니에요. 내 것이 아닌 정보는 넣지 않는 것이 원칙입니다.",
     wrongHint: "일부만 지운다고 남의 정보가 내 정보가 되지는 않아요.",
+    hint: "그 명단은 내 것인가요, 친구들 것인가요?",
   },
   {
     id: "pv_05", type: "privacy", tool: "ownership", level: "hard",
@@ -241,6 +255,7 @@ const QUESTIONS = [
     answer: 0,
     explanation: "이름을 빼도 이야기는 여전히 친구의 것이에요. 믿고 말해 준 이야기를 옮기지 않는 것이 친구를 지키는 방법입니다.",
     wrongHint: "이름만 지운다고 그 사람 이야기가 아니게 되지는 않아요.",
+    hint: "친구가 나에게만 한 이야기라면, 그건 누구의 이야기일까요?",
   },
   {
     id: "pv_06", type: "privacy", tool: "ownership", level: "hard",
@@ -255,6 +270,7 @@ const QUESTIONS = [
     answer: 3,
     explanation: "가족이라도 얼굴의 주인은 그 사람이에요. 나이가 어리다고 물어보지 않아도 되는 건 아닙니다.",
     wrongHint: "가까운 사이일수록 더 조심해서 물어봐야 해요.",
+    hint: "가깝다는 것이 물어보지 않아도 되는 이유가 될까요?",
   },
   {
     id: "pv_07", type: "privacy", tool: "verify", level: "easy",
@@ -269,6 +285,7 @@ const QUESTIONS = [
     answer: 1,
     explanation: "게임을 하는 데 내가 어디 있는지가 왜 필요할까요? 하는 일과 상관없는 요구는 거절해도 게임은 잘 돌아갑니다.",
     wrongHint: "한번 넘어간 위치 기록은 나중에 꺼도 되돌아오지 않아요.",
+    hint: "그 앱이 하는 일과 요구하는 것이 서로 어울리나요?",
   },
   {
     id: "pv_08", type: "privacy", tool: "verify", level: "hard",
@@ -283,6 +300,7 @@ const QUESTIONS = [
     answer: 2,
     explanation: "선물을 주는 데 학교와 전화번호까지 필요한 경우는 드물어요. 주는 것에 비해 요구하는 게 많다면 한 번 멈춰야 합니다.",
     wrongHint: "친구 정보를 대신 적는 건 더 큰 잘못이에요.",
+    hint: "주는 것과 요구하는 것을 저울에 올려 보세요. 어느 쪽이 무겁나요?",
   },
   {
     id: "pv_09", type: "privacy", tool: "critique", level: "easy",
@@ -297,6 +315,7 @@ const QUESTIONS = [
     answer: 0,
     explanation: "대화 상대가 사람이 아니어도, 내가 쓴 글은 어딘가에 저장될 수 있어요. 화면에서 지워도 기록까지 사라지는 건 아닙니다.",
     wrongHint: "화면에서 사라지는 것과 기록에서 사라지는 것은 달라요.",
+    hint: "내가 쓴 말은 어디로 가서 어떻게 될까요?",
   },
   {
     id: "pv_10", type: "privacy", tool: "critique", level: "hard",
@@ -311,6 +330,7 @@ const QUESTIONS = [
     answer: 3,
     explanation: "얼굴이 아니어도 학교 이름과 명찰만으로 내가 어디 있는지 알 수 있어요. 개인정보는 얼굴에만 있는 게 아닙니다.",
     wrongHint: "작게 찍혔어도 확대하면 보여요.",
+    hint: "개인정보는 얼굴에만 있을까요?",
   },
 
   /* ================= 🔍 허위정보 ================= */
@@ -327,6 +347,7 @@ const QUESTIONS = [
     answer: 1,
     explanation: "AI는 모를 때도 아는 것처럼 그럴듯한 답을 만들어 내요. 찾아지지 않는 정보는 아직 사실이 아닙니다.",
     wrongHint: "찾을 수 없는 것을 그대로 옮겨 적으면 거짓말이 하나 더 늘어나요.",
+    hint: "찾아지지 않는다는 건 무슨 뜻일까요?",
   },
   {
     id: "df_02", type: "disinfo", tool: "verify", level: "easy",
@@ -341,6 +362,7 @@ const QUESTIONS = [
     answer: 0,
     explanation: "놀라운 소식일수록 먼저 확인해야 해요. 한 곳에서만 보이는 소식은 아직 사실이라고 하기 어렵습니다.",
     wrongHint: "조회수와 댓글은 사실인지 아닌지를 알려주지 않아요.",
+    hint: "놀라운 소식일수록 왜 더 조심해야 할까요?",
   },
   {
     id: "df_03", type: "disinfo", tool: "verify", level: "hard",
@@ -355,6 +377,7 @@ const QUESTIONS = [
     answer: 3,
     explanation: "AI는 자기가 틀렸는지 스스로 알기 어려워요. 그래서 \"정확합니다\"라는 말도 확인의 근거가 되지 못합니다.",
     wrongHint: "자신 있게 말하는 것과 사실인 것은 아무 상관이 없어요.",
+    hint: "자신 있게 말하는 것과 사실인 것은 같은 말일까요?",
   },
   {
     id: "df_04", type: "disinfo", tool: "critique", level: "easy",
@@ -369,6 +392,7 @@ const QUESTIONS = [
     answer: 0,
     explanation: "AI는 아주 많이 알지만 완벽하지는 않아요. 누가 말했느냐보다 그 말이 사실인지가 중요합니다.",
     wrongHint: "비싼 도구라고 해서 틀리지 않는 건 아니에요.",
+    hint: "누가 말했는지와 그 말이 사실인지, 무엇이 더 중요할까요?",
   },
   {
     id: "df_05", type: "disinfo", tool: "critique", level: "hard",
@@ -383,6 +407,7 @@ const QUESTIONS = [
     answer: 2,
     explanation: "추천은 내가 본 것과 비슷한 걸 더 보여 주도록 만들어져 있어요. 그래서 많이 보인다고 사실인 건 아닙니다. 반대 의견을 일부러 찾아봐야 균형이 잡혀요.",
     wrongHint: "많이 보인다는 것과 사실이라는 것은 아무 상관이 없어요.",
+    hint: "왜 비슷한 영상만 계속 보일까요? 많이 보이면 사실일까요?",
   },
   {
     id: "df_06", type: "disinfo", tool: "critique", level: "hard",
@@ -397,6 +422,7 @@ const QUESTIONS = [
     answer: 3,
     explanation: "AI는 진짜 같은 사람 사진을 얼마든지 만들어 냅니다. 손가락이나 글자가 어색한 건 흔히 남는 흔적이에요. 이제 사진이 있다고 해서 그 사람이 진짜 있는 건 아닙니다.",
     wrongHint: "사진은 더 이상 '진짜라는 증거'가 되지 못해요.",
+    hint: "예전에는 사진이 증거였어요. 지금도 그럴까요?",
   },
   {
     id: "df_07", type: "disinfo", tool: "respect", level: "hard",
@@ -411,6 +437,7 @@ const QUESTIONS = [
     answer: 2,
     explanation: "내가 하지 않은 말과 행동을 한 것처럼 보이게 만드는 건 장난이 아니에요. 웃자고 만든 영상이 어디까지 퍼질지는 아무도 모릅니다.",
     wrongHint: "\"우리끼리만\"으로 끝나는 영상은 거의 없어요.",
+    hint: "그 영상이 내 손을 떠나 어디까지 갈 수 있을까요?",
   },
   {
     id: "df_08", type: "disinfo", tool: "respect", level: "hard",
@@ -425,6 +452,7 @@ const QUESTIONS = [
     answer: 3,
     explanation: "유명하다고 해서 아무렇게나 써도 되는 얼굴과 목소리가 되는 건 아니에요. 하지 않은 말을 지어내는 건 그 사람에게 피해를 줍니다.",
     wrongHint: "출처를 적어도 가짜가 진짜가 되지는 않아요.",
+    hint: "그 사람이 하지 않은 말을 내가 만들어도 될까요?",
   },
   {
     id: "df_09", type: "disinfo", tool: "ownership", level: "easy",
@@ -439,6 +467,7 @@ const QUESTIONS = [
     answer: 2,
     explanation: "소문은 옮기는 사람이 있어야 퍼져요. 처음 만든 사람만큼이나 옮긴 사람에게도 몫이 있습니다.",
     wrongHint: "\"카더라\"를 붙여도 퍼뜨린 건 그대로예요.",
+    hint: "소문이 퍼지려면 누가 있어야 할까요?",
   },
   {
     id: "df_10", type: "disinfo", tool: "ownership", level: "hard",
@@ -453,6 +482,7 @@ const QUESTIONS = [
     answer: 1,
     explanation: "읽는 사람은 '누가 어떻게 알아낸 이야기인지'를 믿고 읽어요. 그 믿음을 속이지 않으려면 밝히고, 확인해야 합니다.",
     wrongHint: "내용이 맞더라도 누가 썼는지를 속이면 그것도 거짓이에요.",
+    hint: "읽는 사람은 무엇을 믿고 그 기사를 읽을까요?",
   },
 ];
 
@@ -469,8 +499,12 @@ const QUESTIONS = [
    25~34% 에서 3~6% 로 떨어졌고, 포획 성공률은 68% → 87% 가 됐다.
    ----------------------------------------------------------- */
 
-/* 어떤 속성 풀에서, 특정 도구 태그의 문항 목록 */
+/* 어떤 속성 풀에서, 특정 도구 태그의 문항 목록
+   "all" 은 마지막 보스 전용 — 세 주제 30문항을 통째로 쓴다. */
 function getQuestions(typeId, toolId) {
+  if (typeId === "all") {
+    return QUESTIONS.filter((q) => q.tool === toolId);
+  }
   return QUESTIONS.filter((q) => q.type === typeId && q.tool === toolId);
 }
 
@@ -481,6 +515,16 @@ function getQuestions(typeId, toolId) {
 function pickQuestion(monster, toolId, usedIds, seenIds) {
   let pool = getQuestions(monster.type, toolId).filter((q) => !usedIds.includes(q.id));
   if (pool.length === 0) return null;
+
+  // 마지막 보스는 내가 약한 곳을 찌른다 — 전에 틀렸던 문항을 먼저 낸다.
+  // 보스답기도 하고, 마지막 복습이 되기도 한다.
+  if (monster.finalBoss) {
+    const weak = pool.filter((q) => save.wrongIds.includes(q.id));
+    if (weak.length > 0) {
+      return weak[Math.floor(Math.random() * weak.length)];
+    }
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
 
   // 1순위: 이번 게임에서 아직 한 번도 안 나온 문항
   //         (같은 속성 두 마리가 풀을 나눠 쓰므로 두 번째 판이 지루해지지 않게)

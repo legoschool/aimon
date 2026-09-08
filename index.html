@@ -57,11 +57,21 @@
     <span class="hud-spacer"></span>
     <button id="btnMissions" class="btn small">의뢰</button>
     <button id="btnReview" class="btn small">복습</button>
+    <button id="btnBadges" class="btn small">증표</button>
     <button id="btnDex" class="btn small">도감</button>
     <button id="btnReport" class="btn small">기록</button>
     <button id="btnTitleBack" class="btn small">나가기</button>
-    <span id="hudHint" class="hud-hint"></span>
   </header>
+
+  <!-- 지금 할 일 -->
+  <div id="questBanner" class="quest">
+    <span class="q-label">QUEST</span>
+    <div class="q-body">
+      <p class="q-title"></p>
+      <p class="q-desc"></p>
+    </div>
+    <span class="q-progress"></span>
+  </div>
 
   <div class="map-stage">
     <div id="zoneLabel" class="zone-label"></div>
@@ -122,6 +132,16 @@
     <button id="btnMissionsBack" class="btn small">돌아가기</button>
   </header>
   <div id="missionList" class="mission-list"></div>
+</section>
+
+<!-- ================= 증표 ================= -->
+<section id="screen-badges" class="screen">
+  <header class="sheet-head">
+    <h2>증표</h2>
+    <span class="sheet-spacer"></span>
+    <button id="btnBadgesBack" class="btn small">돌아가기</button>
+  </header>
+  <div id="badgeBody"></div>
 </section>
 
 <!-- ================= 복습 ================= -->
@@ -188,6 +208,7 @@
 <script src="data/player.js"></script>
 <script src="data/map.js"></script>
 <script src="data/missions.js"></script>
+<script src="data/badges.js"></script>
 <!-- 엔진 -->
 <script src="src/audio.js"></script>
 <script src="src/readlock.js"></script>
@@ -196,6 +217,7 @@
 <script src="src/dex.js"></script>
 <script src="src/report.js"></script>
 <script src="src/missions.js"></script>
+<script src="src/badges.js"></script>
 <script src="src/review.js"></script>
 <script src="src/tutorial.js"></script>
 <script src="src/world.js"></script>
