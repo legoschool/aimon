@@ -13,7 +13,7 @@ let current = "title";
    시작
    ----------------------------------------------------------- */
 window.addEventListener("DOMContentLoaded", function () {
-  ["title", "map", "battle", "dex", "report", "class", "missions"].forEach(function (id) {
+  ["title", "map", "battle", "dex", "report", "class", "missions", "review"].forEach(function (id) {
     screens[id] = document.getElementById("screen-" + id);
   });
 
@@ -32,6 +32,7 @@ window.addEventListener("DOMContentLoaded", function () {
   el.hudName = document.getElementById("hudName");
   el.hudMission = document.getElementById("hudMission");
   el.missionList = document.getElementById("missionList");
+  el.reviewBody = document.getElementById("reviewBody");
 
   el.dexGrid = document.getElementById("dexGrid");
   el.reportBody = document.getElementById("reportBody");
@@ -71,6 +72,11 @@ window.addEventListener("DOMContentLoaded", function () {
   document.getElementById("btnReport").onclick = function () { openReport("map"); };
   document.getElementById("btnMissions").onclick = function () { openMissions("map"); };
   document.getElementById("btnMissionsBack").onclick = closeOverlay;
+  document.getElementById("btnReview").onclick = function () { openReview("map"); };
+  document.getElementById("btnReviewBack").onclick = function () {
+    clearLock();
+    closeOverlay();
+  };
   document.getElementById("btnTitleBack").onclick = function () {
     stopBgm();
     show("title");
@@ -87,6 +93,7 @@ window.addEventListener("DOMContentLoaded", function () {
   document.getElementById("tutorialNext").onclick = tutorialNext;
 
   setupAudioControls();
+  setupFontControl();
   setupTouchPad();
   setupKeys();
   setupFirstGesture();
@@ -202,6 +209,16 @@ function openMissions(from) {
   renderMissions(el.missionList);
   show("missions");
 }
+function openReview(from) {
+  sfx("button");
+  overlayFrom = from;
+  show("review");
+  startReview(el.reviewBody, function () {
+    clearLock();
+    closeOverlay();
+    updateHud();
+  });
+}
 function closeOverlay() {
   sfx("button");
   if (overlayFrom === "title") {
@@ -240,6 +257,12 @@ function updateHud() {
   el.hudBalls.textContent =
     "판단볼 " + save.balls.basic + " · " + save.balls.reason + " · " + save.balls.sure;
   el.hudMission.textContent = "의뢰 " + missionsCleared() + " / " + MISSIONS.length;
+
+  // 복습할 문제가 있으면 버튼에 개수를 띄운다
+  const rBtn = document.getElementById("btnReview");
+  const n = wrongCount();
+  rBtn.textContent = n > 0 ? "복습 " + n : "복습";
+  rBtn.classList.toggle("has-work", n > 0);
 
   const now = currentMission();
   el.hudHint.textContent = now
@@ -345,12 +368,103 @@ function setupKeys() {
       }
       return;
     }
-    if (current !== "map") return;
-    const dir = KEYMAP[e.key];
-    if (!dir) return;
-    e.preventDefault();
-    moveWorld(dir);
+
+    // 맵에서는 방향키로 걷는다
+    if (current === "map") {
+      const dir = KEYMAP[e.key];
+      if (!dir) return;
+      e.preventDefault();
+      moveWorld(dir);
+      return;
+    }
+
+    // 전투·복습에서는 숫자키와 엔터로 다 할 수 있다 (마우스 없이도)
+    if (current === "battle" || current === "review") {
+      handleChoiceKey(e);
+    }
   });
+}
+
+/* -----------------------------------------------------------
+   숫자키 1~4 로 고르기, 엔터로 넘어가기
+
+   교실에는 마우스가 서툰 아이가 있다. 손이 불편한 아이도 있다.
+   화면에 보이는 순서 그대로 숫자키에 대응시킨다.
+   ----------------------------------------------------------- */
+function handleChoiceKey(e) {
+  const root = current === "battle"
+    ? document.getElementById("battlePanel")
+    : document.getElementById("reviewBody");
+  if (!root) return;
+
+  if (e.key === "Enter" || e.key === " ") {
+    const primary = root.querySelector(".btn.primary:not([disabled])");
+    if (primary) {
+      e.preventDefault();
+      primary.click();
+    }
+    return;
+  }
+
+  const n = parseInt(e.key, 10);
+  if (!(n >= 1 && n <= 4)) return;
+
+  // 지금 화면에 있는 것 중 먼저 잡히는 것을 누른다
+  const groups = [".opt", ".tool-btn", ".ball-btn"];
+  for (let i = 0; i < groups.length; i++) {
+    const list = root.querySelectorAll(groups[i]);
+    if (list.length >= n) {
+      const target = list[n - 1];
+      if (target && !target.disabled) {
+        e.preventDefault();
+        target.click();
+      }
+      return; // 잠겨 있으면 아무 일도 안 일어난다 (읽는 중)
+    }
+  }
+}
+
+/* -----------------------------------------------------------
+   글자 크기 — 칠판 글씨가 잘 안 보이는 아이를 위해
+   ----------------------------------------------------------- */
+const FONT_STEPS = [
+  { px: 16, label: "가" },
+  { px: 18.5, label: "가" },
+  { px: 21, label: "가" },
+];
+const FONT_KEY = "aimon_font_v1";
+let fontStep = 0;
+
+function applyFontStep() {
+  document.documentElement.style.fontSize = FONT_STEPS[fontStep].px + "px";
+  const btn = document.getElementById("btnFont");
+  if (btn) {
+    btn.textContent = "글자 " + ["보통", "크게", "아주 크게"][fontStep];
+    btn.style.fontSize = fontStep === 0 ? "" : "0.8rem";
+  }
+  try {
+    localStorage.setItem(FONT_KEY, String(fontStep));
+  } catch (err) {
+    /* 저장이 막혀도 이번 판에는 적용된다 */
+  }
+}
+
+function setupFontControl() {
+  try {
+    const saved = parseInt(localStorage.getItem(FONT_KEY), 10);
+    if (saved >= 0 && saved < FONT_STEPS.length) fontStep = saved;
+  } catch (err) {
+    /* 무시 */
+  }
+  const btn = document.getElementById("btnFont");
+  if (btn) {
+    btn.onclick = function () {
+      sfx("button");
+      fontStep = (fontStep + 1) % FONT_STEPS.length;
+      applyFontStep();
+    };
+  }
+  applyFontStep();
 }
 
 /* -----------------------------------------------------------

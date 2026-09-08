@@ -69,6 +69,7 @@ canvas { image-rendering: pixelated; display: block; }
 .btn.big { width: 100%; padding: 14px; font-size: 1.05rem; }
 .btn.small { padding: 6px 12px; font-size: .85rem; box-shadow: 2px 2px 0 var(--line); }
 .btn.ball { background: #f0e3b8; }
+.btn.has-work { background: #f6e6c8; border-color: #97701c; }
 button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-offset: 2px; }
 
 /* -----------------------------------------------------------
@@ -243,6 +244,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
   margin-top: 4px; display: flex; justify-content: space-between;
   align-items: center; gap: 6px; font-size: .72rem;
 }
+.tool-boost {
+  font-size: .72rem; font-weight: 800; color: var(--good);
+  background: #e6f2e8; border: 2px solid var(--good);
+  padding: 1px 6px; margin-top: 3px; line-height: 1.5;
+}
 .tool-meta b.good { color: var(--good); }
 .tool-meta b.bad { color: var(--bad); }
 .tool-left { color: var(--ink-soft); }
@@ -348,6 +354,12 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
   background: var(--paper); border: 3px solid var(--line);
   font-size: .93rem; text-align: left;
 }
+.purify-boost {
+  margin: 0 auto 12px; max-width: 460px; padding: 10px;
+  background: #e6f2e8; border: 3px solid var(--good);
+  font-size: .95rem; font-weight: 700;
+}
+.purify-boost span { display: block; font-size: .8rem; color: var(--ink-soft); margin-top: 2px; }
 .purify-note { margin: 0 0 14px; font-size: .85rem; color: var(--ink-soft); font-weight: 700; }
 
 /* -----------------------------------------------------------

@@ -47,6 +47,53 @@ const TYPE_CHART = {
   critique:  { copyright: 1.0, privacy: 1.0, disinfo: 1.0 },
 };
 
+/* -----------------------------------------------------------
+   정화한 가치몬이 판단 도구를 키운다
+
+   잡아서 도감에 넣고 끝나면 도감은 목표일 뿐 도구가 되지 못한다.
+   "배운 가치가 곧 내 판단력이 된다"가 이 게임의 주제이므로,
+   그 주제를 정화할수록 그 주제에 강한 도구가 세지게 한다.
+
+     허위정보 가치몬(확인지기·진실지기) → 🔍 출처확인
+     저작권   가치몬(출처지기·허락지기) → ⚖️ 권리존중
+     개인정보 가치몬(동의지기·비밀지기) → 🤝 책임사용
+     🧠 비판적사고는 특정 주제가 없으므로 "전체 정화 수"로 천천히 큰다.
+   ----------------------------------------------------------- */
+const TOOL_BOOST_TYPE = {
+  verify: "disinfo",
+  respect: "copyright",
+  ownership: "privacy",
+  critique: null, // 전체 정화 수로 큰다
+};
+
+const TOOL_BOOST_PER = 0.15; // 같은 주제 한 마리당 배율 +0.15
+const CRITIQUE_BOOST_PER = 0.05; // 비판적사고는 아무 몬스터나 한 마리당 +0.05
+
+/* 이 도구가 지금 얼마나 세졌는가 (1.0 이면 아직 그대로) */
+function getToolBoost(toolId) {
+  const type = TOOL_BOOST_TYPE[toolId];
+  if (!type) {
+    return 1 + dexCaughtCount() * CRITIQUE_BOOST_PER;
+  }
+  const n = MONSTERS.filter(function (m) {
+    return m.type === type && isCaught(m.id);
+  }).length;
+  return 1 + n * TOOL_BOOST_PER;
+}
+
+/* 그 도구를 키워 주는 가치몬 이름들 (화면에 이유를 보여 주려고) */
+function boostSourceNames(toolId) {
+  const type = TOOL_BOOST_TYPE[toolId];
+  if (!type) {
+    return dexCaughtCount() > 0 ? ["정화한 가치몬 " + dexCaughtCount() + "마리"] : [];
+  }
+  return MONSTERS.filter(function (m) {
+    return m.type === type && isCaught(m.id);
+  }).map(function (m) {
+    return m.purified.name;
+  });
+}
+
 /* 배율에 따라 띄우는 문구 (1세대 "효과가 굉장했다!" 자리) */
 const EFFECT_MESSAGE = {
   1.5: "효과가 굉장했다!",

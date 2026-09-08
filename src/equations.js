@@ -59,10 +59,12 @@ const BALLS = {
 function calcDamage(toolId, monsterType, streak) {
   const typeMult = getTypeMultiplier(toolId, monsterType);
   const comboMult = getComboMultiplier(streak);
+  const boost = getToolBoost(toolId); // 정화한 가치몬이 키워 준 만큼
   return {
-    amount: Math.round(BALANCE.baseDamage * typeMult * comboMult),
+    amount: Math.round(BALANCE.baseDamage * typeMult * comboMult * boost),
     typeMult: typeMult,
     comboMult: comboMult,
+    boost: boost,
     message: EFFECT_MESSAGE[typeMult] || "",
   };
 }

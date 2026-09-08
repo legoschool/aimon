@@ -36,13 +36,12 @@ const battle = {
   question: null,
   tool: null,
   instantCount: 0, // 잠금이 풀리자마자 튕기듯 누른 횟수
-  unlockedAt: 0, // 마지막으로 잠금이 풀린 시각
-  lockTimer: null, // 읽는 동안 잠가 두는 타이머
   phase: "intro",
   purifying: false,
   monY: 0, // 흔들림·튀어오름 연출용 세로 오프셋
   monAlpha: 1,
   ball: null, // {x, y, visible, shake}
+  fx: { flash: 0, rings: [], sparks: [], white: 0 }, // 정화 연출
   ctx: null,
   dom: {},
   onEnd: null,
@@ -63,13 +62,14 @@ function startBattle(monster, dom, onEnd) {
   battle.question = null;
   battle.tool = null;
   battle.instantCount = 0;
-  battle.unlockedAt = 0;
+  resetUnlock();
   clearLock();
   battle.phase = "intro";
   battle.purifying = false;
   battle.monY = 0;
   battle.monAlpha = 1;
   battle.ball = null;
+  battle.fx = { flash: 0, rings: [], sparks: [], white: 0 };
   battle.dom = dom;
   battle.onEnd = onEnd;
 
@@ -114,14 +114,51 @@ function drawBattle() {
   const m = battle.monster;
   const pal = paletteFor(m.type);
   const grid = battle.purifying ? m.purified.sprite : m.sprite;
+  const fx = battle.fx;
+  const cx = CANVAS_SIZE / 2;
+  const cy = CANVAS_SIZE / 2;
+
+  // 퍼져 나가는 빛의 고리 (몬스터 뒤)
+  fx.rings.forEach(function (r) {
+    ctx.globalAlpha = Math.max(0, r.life);
+    ctx.strokeStyle = r.color;
+    ctx.lineWidth = r.w;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r.r, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+  ctx.globalAlpha = 1;
 
   ctx.globalAlpha = battle.monAlpha;
   drawSprite(ctx, grid, pal, MON_OFFSET, MON_OFFSET + battle.monY, MON_SCALE, false);
   ctx.globalAlpha = 1;
 
+  // 하얗게 타오르는 실루엣 (정화되는 순간)
+  if (fx.white > 0) {
+    ctx.globalAlpha = Math.min(1, fx.white);
+    drawSpriteSilhouette(ctx, grid, MON_OFFSET, MON_OFFSET + battle.monY, MON_SCALE, "#ffffff", false);
+    ctx.globalAlpha = 1;
+  }
+
+  // 흩어지는 반짝이
+  fx.sparks.forEach(function (s) {
+    ctx.globalAlpha = Math.max(0, s.life);
+    ctx.fillStyle = s.color;
+    ctx.fillRect(s.x - s.size / 2, s.y - s.size / 2, s.size, s.size);
+  });
+  ctx.globalAlpha = 1;
+
   if (battle.ball && battle.ball.visible) {
     const b = battle.ball;
     drawSprite(ctx, BALL_SPRITE, BALL_PALETTE, b.x, b.y, 6, false);
+  }
+
+  // 화면 전체가 번쩍
+  if (fx.flash > 0) {
+    ctx.globalAlpha = Math.min(1, fx.flash);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    ctx.globalAlpha = 1;
   }
 }
 
@@ -171,69 +208,7 @@ function panel() {
   return battle.dom.panel;
 }
 
-/* -----------------------------------------------------------
-   읽는 동안 잠그기
-
-   문제가 뜨자마자 아무 보기나 누르는 걸 막는다.
-   막대가 다 차면 열린다. 남은 시간을 초 단위로 보여 줘서
-   "고장 났나?" 하는 오해가 없게 한다.
-   ----------------------------------------------------------- */
-function clearLock() {
-  if (battle.lockTimer) {
-    clearInterval(battle.lockTimer);
-    battle.lockTimer = null;
-  }
-}
-
-/* targets      : 잠가 둘 버튼 목록
-   ms           : 잠글 시간
-   text         : 잠긴 동안 보여 줄 말
-   trackInstant : 열린 뒤 얼마 만에 눌렀는지 잴지 (문제 화면에서만 true)
-
-   해설 잠금까지 시각을 기록하면 그 값이 다음 문제까지 남아,
-   실제로는 읽고 눌렀는데도 "튕겨 눌렀다"고 잘못 볼 수 있다.
-   그래서 재는 화면을 문제로 한정하고, 잠글 때마다 값을 비운다. */
-function lockUntilRead(container, targets, ms, text, trackInstant) {
-  clearLock();
-  battle.unlockedAt = 0;
-
-  const bar = document.createElement("div");
-  bar.className = "read-lock";
-  bar.innerHTML = '<i></i><span class="rl-text"></span>';
-  container.appendChild(bar);
-
-  const fill = bar.querySelector("i");
-  const label = bar.querySelector(".rl-text");
-
-  targets.forEach(function (b) {
-    b.disabled = true;
-    b.classList.add("waiting");
-  });
-
-  const start = Date.now();
-  function tick() {
-    const passed = Date.now() - start;
-    const left = Math.max(0, ms - passed);
-    fill.style.width = Math.min(100, (passed / ms) * 100) + "%";
-    label.textContent = text + "  " + (Math.ceil(left / 100) / 10).toFixed(1) + "초";
-
-    if (left <= 0) {
-      clearLock();
-      bar.classList.add("done");
-      label.textContent = "이제 고를 수 있어요";
-      if (trackInstant) battle.unlockedAt = Date.now(); // 여기서부터 얼마 만에 누르는지 잰다
-      targets.forEach(function (b) {
-        b.disabled = false;
-        b.classList.remove("waiting");
-      });
-      const first = targets[0];
-      if (first) first.focus();
-    }
-  }
-
-  tick();
-  battle.lockTimer = setInterval(tick, 100);
-}
+/* 읽는 동안 잠그는 장치는 src/readlock.js 에 있다 (복습 모드와 함께 쓴다) */
 
 function showMessage(title, body, btnLabel, next) {
   clearLock();
@@ -296,10 +271,21 @@ function renderToolChoice() {
     btn.className = "tool-btn" + (usable ? "" : " locked");
     btn.disabled = !usable;
 
+    // 정화한 가치몬이 이 도구를 키워 줬다면 알려 준다
+    const boost = getToolBoost(id);
+    const boostRow =
+      boost > 1
+        ? '<span class="tool-boost">▲ ' +
+          Math.round((boost - 1) * 100) + "% 강해짐 · " +
+          boostSourceNames(id).join(", ") +
+          "</span>"
+        : "";
+
     btn.innerHTML =
       '<span class="tool-icon">' + t.icon + "</span>" +
       '<span class="tool-name">' + t.name + "</span>" +
       '<span class="tool-desc">' + t.desc + "</span>" +
+      boostRow +
       '<span class="tool-meta">' +
       (mult === 1.5 ? '<b class="good">효과 굉장</b>' : mult === 0.5 ? '<b class="bad">효과 별로</b>' : "<b>보통</b>") +
       '<span class="tool-left">' + (usable ? "남은 문제 " + left : "문제 없음") + "</span>" +
@@ -432,10 +418,9 @@ function grade(choice) {
   battle.usedIds = markAnswer(battle.usedIds, q.id, correct);
 
   // 잠금이 풀리자마자 튕기듯 눌렀는가 — 안 읽었다는 신호
-  const sinceUnlock = battle.unlockedAt ? Date.now() - battle.unlockedAt : 99999;
-  const instant = isInstantAnswer(sinceUnlock);
+  const instant = isInstantAnswer(msSinceUnlock());
   if (instant) battle.instantCount++;
-  battle.unlockedAt = 0;
+  resetUnlock();
 
   let dmg = null;
   let loss = 0;
@@ -514,7 +499,9 @@ function renderResult(correct, choice, dmg, loss, instant) {
     const d = document.createElement("p");
     d.className = "result-dmg";
     d.textContent =
-      "장악력 " + dmg.amount + " 감소  (상성 ×" + dmg.typeMult + " · 콤보 ×" + dmg.comboMult + ")";
+      "장악력 " + dmg.amount + " 감소  (상성 ×" + dmg.typeMult +
+      " · 콤보 ×" + dmg.comboMult +
+      (dmg.boost > 1 ? " · 가치몬 ×" + dmg.boost.toFixed(2) : "") + ")";
     box.appendChild(d);
   } else {
     const again = document.createElement("p");
@@ -761,32 +748,97 @@ function onCaught() {
   );
 }
 
+/* -----------------------------------------------------------
+   정화 연출
+
+   이 게임에서 가장 중요한 순간이다.
+   그림자몬이 하얗게 타오르며 빛으로 흩어졌다가,
+   같은 실루엣의 가치몬으로 돌아온다.
+
+   실루엣이 같기 때문에 "다른 것이 왔다"가 아니라
+   "같은 것이 바뀌었다"로 읽힌다. 그게 이 게임이 하려는 말이다.
+   ----------------------------------------------------------- */
 function playPurify() {
   const p = panel();
   p.innerHTML = '<div class="msg-box"><p class="msg-title">정화하는 중...</p></div>';
   sfx("purify");
 
-  // 그림자몬이 하얗게 사라졌다가, 같은 실루엣의 가치몬으로 돌아온다
-  let a = 1;
-  const out = setInterval(function () {
-    a -= 0.08;
-    battle.monAlpha = Math.max(a, 0);
-    drawBattle();
-    if (a <= 0) {
-      clearInterval(out);
-      battle.purifying = true;
-      let b = 0;
-      const inn = setInterval(function () {
-        b += 0.08;
-        battle.monAlpha = Math.min(b, 1);
-        drawBattle();
-        if (b >= 1) {
-          clearInterval(inn);
-          setTimeout(showPurified, 300);
-        }
-      }, 40);
+  const accent = TYPES[battle.monster.type].accent;
+  const fx = battle.fx;
+  fx.rings = [];
+  fx.sparks = [];
+  fx.flash = 0;
+  fx.white = 0;
+
+  let t = 0;
+  const step = 1 / 60; // 초 단위로 센다
+  const timer = setInterval(function () {
+    t += step;
+
+    /* 0.0~0.8초 — 하얗게 타오르며 고리가 퍼진다 */
+    if (t < 0.8) {
+      fx.white = t / 0.8;
+      if (Math.random() < 0.25) {
+        fx.rings.push({ r: 20, w: 3, life: 1, color: accent });
+      }
     }
-  }, 40);
+
+    /* 0.8초 — 번쩍! 그림자몬이 사라지고 가치몬으로 바뀐다 */
+    if (!battle.purifying && t >= 0.8) {
+      battle.purifying = true;
+      battle.monAlpha = 0;
+      fx.flash = 1;
+      fx.white = 0;
+      // 사방으로 반짝이가 흩어진다
+      for (let i = 0; i < 46; i++) {
+        const ang = (Math.PI * 2 * i) / 46 + Math.random() * 0.3;
+        const spd = 2.2 + Math.random() * 3.4;
+        fx.sparks.push({
+          x: CANVAS_SIZE / 2, y: CANVAS_SIZE / 2,
+          vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
+          size: 3 + Math.random() * 5, life: 1,
+          color: i % 3 === 0 ? "#ffffff" : accent,
+        });
+      }
+      for (let i = 0; i < 3; i++) {
+        fx.rings.push({ r: 10 + i * 14, w: 5, life: 1, color: "#ffffff" });
+      }
+    }
+
+    /* 0.8초 이후 — 가치몬이 서서히 또렷해진다 */
+    if (battle.purifying && battle.monAlpha < 1) {
+      battle.monAlpha = Math.min(1, battle.monAlpha + 0.045);
+    }
+
+    /* 입자와 고리를 움직인다 */
+    fx.flash = Math.max(0, fx.flash - 0.09);
+    fx.rings.forEach(function (r) {
+      r.r += 4.5;
+      r.life -= 0.035;
+    });
+    fx.rings = fx.rings.filter(function (r) { return r.life > 0 && r.r < CANVAS_SIZE; });
+    fx.sparks.forEach(function (s) {
+      s.x += s.vx; s.y += s.vy;
+      s.vy += 0.09;      // 살짝 떨어진다
+      s.vx *= 0.985;
+      s.life -= 0.018;
+    });
+    fx.sparks = fx.sparks.filter(function (s) { return s.life > 0; });
+
+    drawBattle();
+
+    /* 끝 — 정리하고 결과를 보여 준다 */
+    if (t >= 2.6) {
+      clearInterval(timer);
+      battle.monAlpha = 1;
+      fx.rings = [];
+      fx.sparks = [];
+      fx.flash = 0;
+      fx.white = 0;
+      drawBattle();
+      showPurified();
+    }
+  }, 1000 / 60);
 }
 
 function showPurified() {
@@ -811,6 +863,19 @@ function showPurified() {
   l.className = "purify-lesson";
   l.textContent = m.purified.lesson;
   box.appendChild(l);
+
+  // 이번 정화로 어떤 판단 도구가 세졌는지 알려 준다
+  const grownTool = Object.keys(TOOLS).filter(function (id) {
+    return TOOL_BOOST_TYPE[id] === m.type;
+  })[0];
+  if (grownTool) {
+    const up = document.createElement("p");
+    up.className = "purify-boost";
+    up.innerHTML =
+      TOOLS[grownTool].icon + " <b>" + TOOLS[grownTool].name + "</b> 이(가) 더 강해졌어요! " +
+      "<span>지금 " + Math.round((getToolBoost(grownTool) - 1) * 100) + "% 강화</span>";
+    box.appendChild(up);
+  }
 
   const note = document.createElement("p");
   note.className = "purify-note";
