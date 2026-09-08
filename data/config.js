@@ -10,7 +10,7 @@
 
 /* Apps Script 웹 앱 주소 (…/exec 로 끝나야 합니다) */
 const SHEET_ENDPOINT =
-  "https://script.google.com/macros/s/AKfycbxmmkXI-cTzKID36xQEjOiHAVlm9MYEeGAuS5Igz8lp4ltMxfDAhsuf3JqLiLYnAtrl/exec";
+  "https://script.google.com/macros/s/AKfycbw-YBLSXaAi6JWwQ6LTk2m8HV89r9OXQWgTaOAr5whknUHXnZKC65GJMQxsYZE72EU/exec";
 
 /* 연동을 잠시 끄고 싶을 때 false 로 바꾸세요 */
 const SHEET_ENABLED = true;

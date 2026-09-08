@@ -105,7 +105,7 @@ function renderAdminRows(container, rows) {
       "<td>" + (r.privacy === "" ? "-" : r.privacy + "%") + "</td>" +
       "<td>" + (r.disinfo === "" ? "-" : r.disinfo + "%") + "</td>" +
       "<td>" + (r.hints || 0) + "</td>" +
-      "<td class='ct-when'>" + esc(r.when) + "</td>";
+      "<td class='ct-when'>" + (esc(r.when) || "-") + "</td>";
     tb.appendChild(tr);
   });
   table.appendChild(tb);

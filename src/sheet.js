@@ -17,14 +17,22 @@
 let lastSentAt = 0;
 const SEND_COOLDOWN_MS = 3000; // 너무 자주 보내지 않게
 
+/* 구글 시트는 "5-3" 을 5월 3일로 바꿔 버린다.
+   앞에 작은따옴표를 붙이면 "이건 글자다"라는 뜻이 되고,
+   시트에는 따옴표 없이 5-3 으로 그대로 남는다. */
+function asText(v) {
+  const s = String(v === undefined || v === null ? "" : v).trim();
+  return s === "" ? "" : "'" + s;
+}
+
 /* 지금 저장본에서 보낼 내용을 만든다 */
 function buildRecord() {
   const all = overallAccuracy();
   return {
     action: "submit",
-    klass: save.klass || "",
-    number: save.number || "",
-    nick: save.nick || save.name || "",
+    klass: asText(save.klass),
+    number: asText(save.number),
+    nick: asText(save.nick || save.name),
     caught: dexCaughtCount(),
     badges: typeof badgeCount === "function" ? badgeCount() : 0,
     asked: all.asked,
