@@ -196,7 +196,7 @@ function renderStudentList() {
     go.className = "student-go";
     go.innerHTML =
       '<span class="st-name">' + escapeHtml(s.label || s.name) + "</span>" +
-      '<span class="st-meta">정화 ' + s.caught + " / " + MONSTERS.length + " · 정답률 " +
+      '<span class="st-meta">정화 ' + s.caught + "마리 · 정답률 " +
       (s.asked ? Math.round(s.rate * 100) : 0) + "%</span>";
     go.onclick = function () {
       sfx("button");
@@ -353,12 +353,45 @@ function enterMap(message) {
   if (save.tutorial.intro && message) flash(message);
 }
 
+/* -----------------------------------------------------------
+   마을 옮기기
+
+   데이터 도시는 AI 마을을 끝내야 열린다.
+   순서를 지키는 이유는 2스테이지 함정이 1스테이지 정답을 비틀기 때문이다.
+   마을을 안 거친 아이에게는 그 함정이 그냥 어려운 문제일 뿐이다.
+   ----------------------------------------------------------- */
+function enterStage(n) {
+  save.stage = n;
+  writeSave();
+  stopEndingScene();
+  show("map");
+  initWorld(el.mapCanvas);
+  world.onEncounter = onEncounter;
+  world.onZone = function (name) {
+    el.zoneLabel.textContent = name || "";
+    el.zoneLabel.style.opacity = name ? "1" : "0";
+  };
+  updateHud();
+  drawWorld();
+
+  if (n === 2) {
+    tutorialCity(function () {
+      flash("데이터 도시에 도착했어요. 새 질문이 열렸습니다!");
+    });
+  } else {
+    flash(stageName(n) + josa(stageName(n), "으로", "로") + " 돌아왔어요.");
+  }
+}
+
 function updateHud() {
-  el.hudName.textContent = displayName();
-  el.hudDex.textContent = "도감 " + dexCaughtCount() + " / " + MONSTERS.length;
+  const st = currentStage();
+  el.hudName.textContent = displayName() + " · " + stageName(st);
+  el.hudDex.textContent =
+    "도감 " + stageCaughtCount(st) + " / " + monstersOfStage(st).length;
   el.hudBalls.textContent =
     "가치볼 " + save.balls.basic + " · " + save.balls.reason + " · " + save.balls.sure;
-  el.hudMission.textContent = "의뢰 " + missionsCleared() + " / " + MISSIONS.length;
+  el.hudMission.textContent =
+    "의뢰 " + missionsCleared() + " / " + missionsOfStage().length;
 
   // 복습할 문제가 있으면 버튼에 개수를 띄운다
   const rBtn = document.getElementById("btnReview");

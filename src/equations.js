@@ -72,8 +72,8 @@ const BALLS = {
 /* -----------------------------------------------------------
    데미지
    ----------------------------------------------------------- */
-function calcDamage(toolId, monsterType, streak) {
-  const typeMult = getTypeMultiplier(toolId, monsterType);
+function calcDamage(toolId, monsterType, streak, monsterType2) {
+  const typeMult = getTypeMultiplier(toolId, monsterType, monsterType2);
   const comboMult = getComboMultiplier(streak);
   const boost = getToolBoost(toolId); // 정화한 가치몬이 키워 준 만큼
   return {
@@ -81,7 +81,7 @@ function calcDamage(toolId, monsterType, streak) {
     typeMult: typeMult,
     comboMult: comboMult,
     boost: boost,
-    message: EFFECT_MESSAGE[typeMult] || "",
+    message: effectMessage(typeMult),
   };
 }
 
@@ -118,8 +118,37 @@ function isInstantAnswer(msSinceUnlock) {
 }
 
 /* 잡을 수 있는가 — 장악력·정답률에 더해 최소 문항 수까지 본다 */
+/* -----------------------------------------------------------
+   스테이지별로 덮어쓰는 값
+
+   데이터 도시는 같은 규칙으로 더 어렵다.
+   문항을 어렵게 만드는 것만으로는 부족해서, 잡는 문턱도 올린다.
+   여기 없는 값은 위의 BALANCE 를 그대로 쓴다.
+   ----------------------------------------------------------- */
+const STAGE_BALANCE = {
+  2: {
+    catchMinAccuracy: 0.7, // 정답률 60% → 70%
+    minAskedToCatch: 4, // 최소 3문제 → 4문제
+    whyChance: 0.6, // "왜 그럴까?" 가 훨씬 자주 나온다
+  },
+};
+
+/* 화면에 띄울 때 쓰는 퍼센트 */
+function accPct() {
+  return Math.round(bal("catchMinAccuracy") * 100);
+}
+
+function gripPctLimit() {
+  return Math.round(bal("catchGripRatio") * 100);
+}
+
+function bal(key) {
+  const over = STAGE_BALANCE[currentStage()];
+  return over && over[key] !== undefined ? over[key] : BALANCE[key];
+}
+
 function hasEnoughAnswers(asked) {
-  return asked >= BALANCE.minAskedToCatch;
+  return asked >= bal("minAskedToCatch");
 }
 
 /* 해설을 읽을 시간 */
@@ -133,7 +162,7 @@ function calcExplainMs(isCorrect) {
 function shouldOfferWhy(question, isCorrect, asked) {
   if (!isCorrect || !question || !question.why) return false;
   if (asked <= 1) return false;
-  return Math.random() < BALANCE.whyChance;
+  return Math.random() < bal("whyChance");
 }
 
 /* -----------------------------------------------------------
@@ -147,14 +176,14 @@ function shouldOfferWhy(question, isCorrect, asked) {
    ----------------------------------------------------------- */
 function canThrowBall(grip, maxGrip, right, asked) {
   const gripOk = grip <= maxGrip * BALANCE.catchGripRatio;
-  const accOk = asked > 0 && right / asked >= BALANCE.catchMinAccuracy;
+  const accOk = asked > 0 && right / asked >= bal("catchMinAccuracy");
   const enoughOk = hasEnoughAnswers(asked);
   return {
     ok: gripOk && accOk && enoughOk,
     gripOk: gripOk,
     accOk: accOk,
     enoughOk: enoughOk,
-    needMore: Math.max(0, BALANCE.minAskedToCatch - asked),
+    needMore: Math.max(0, bal("minAskedToCatch") - asked),
   };
 }
 

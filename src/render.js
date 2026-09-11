@@ -79,8 +79,8 @@ function mixHex(a, b, t) {
    숲 타일은 점이 속성색이라, 어느 숲인지 색으로 구분된다.
    ----------------------------------------------------------- */
 function drawTile(ctx, ch, px, py, size, scale, purity) {
-  const dark = TILE_STYLE[ch] || TILE_STYLE["."];
-  const pure = PURE_TILE_STYLE[ch] || dark;
+  const dark = tileStyles()[ch] || tileStyles()["."];
+  const pure = pureTileStyles()[ch] || dark;
   const t = purity || 0;
   const s = size * scale;
   ctx.fillStyle = mixHex(dark.base, pure.base, t);
@@ -89,42 +89,68 @@ function drawTile(ctx, ch, px, py, size, scale, purity) {
   ctx.fillStyle = mixHex(dark.dot, pure.dot, t);
   const p = scale; // 점 하나 크기
 
-  if (ch === "#") {
-    // 나무 — 둥근 덩어리
-    ctx.fillRect(px + 3 * scale, py + 2 * scale, 10 * scale, 9 * scale);
-    ctx.fillRect(px + 2 * scale, py + 4 * scale, 12 * scale, 5 * scale);
-    ctx.fillRect(px + 6 * scale, py + 11 * scale, 4 * scale, 4 * scale);
-  } else if (ch === "C" || ch === "P" || ch === "D") {
-    // 데이터숲 — 풀포기가 속성색으로 돋아 있다
-    ctx.fillRect(px + 2 * scale, py + 9 * scale, p, 4 * scale);
-    ctx.fillRect(px + 3 * scale, py + 7 * scale, p, 6 * scale);
-    ctx.fillRect(px + 4 * scale, py + 9 * scale, p, 4 * scale);
-    ctx.fillRect(px + 9 * scale, py + 8 * scale, p, 5 * scale);
-    ctx.fillRect(px + 10 * scale, py + 6 * scale, p, 7 * scale);
-    ctx.fillRect(px + 11 * scale, py + 8 * scale, p, 5 * scale);
-    ctx.fillRect(px + 6 * scale, py + 3 * scale, p, 4 * scale);
-    ctx.fillRect(px + 13 * scale, py + 2 * scale, p, 4 * scale);
-  } else if (ch === "~") {
-    // 물결
-    ctx.fillRect(px + 2 * scale, py + 4 * scale, 5 * scale, p);
-    ctx.fillRect(px + 9 * scale, py + 8 * scale, 5 * scale, p);
-    ctx.fillRect(px + 4 * scale, py + 12 * scale, 5 * scale, p);
-  } else if (ch === "L") {
-    // 연구소 벽돌
-    ctx.fillRect(px, py + 5 * scale, s, p);
-    ctx.fillRect(px, py + 11 * scale, s, p);
-    ctx.fillRect(px + 7 * scale, py, p, 5 * scale);
-    ctx.fillRect(px + 3 * scale, py + 6 * scale, p, 5 * scale);
-    ctx.fillRect(px + 12 * scale, py + 6 * scale, p, 5 * scale);
-  } else if (ch === "=") {
-    // 길 — 자갈 몇 알
-    ctx.fillRect(px + 3 * scale, py + 5 * scale, p, p);
-    ctx.fillRect(px + 11 * scale, py + 3 * scale, p, p);
-    ctx.fillRect(px + 7 * scale, py + 12 * scale, p, p);
-  } else {
-    // 땅 — 풀 한 포기
-    ctx.fillRect(px + 5 * scale, py + 6 * scale, p, 2 * scale);
-    ctx.fillRect(px + 12 * scale, py + 11 * scale, p, 2 * scale);
+  // 모양은 글자가 아니라 shape 로 정한다.
+  // 같은 '#' 이 마을에서는 나무, 도시에서는 건물이 되어야 하기 때문이다.
+  switch (dark.shape) {
+    case "tree": // 나무 — 둥근 덩어리
+      ctx.fillRect(px + 3 * scale, py + 2 * scale, 10 * scale, 9 * scale);
+      ctx.fillRect(px + 2 * scale, py + 4 * scale, 12 * scale, 5 * scale);
+      ctx.fillRect(px + 6 * scale, py + 11 * scale, 4 * scale, 4 * scale);
+      break;
+
+    case "building": // 건물 — 창문이 줄지어 난 네모
+      ctx.fillRect(px + 2 * scale, py, 12 * scale, 16 * scale);
+      ctx.fillStyle = mixHex(dark.base, pure.base, t);
+      for (let ry = 2; ry < 15; ry += 4) {
+        for (let rx = 4; rx < 13; rx += 4) {
+          ctx.fillRect(px + rx * scale, py + ry * scale, 2 * scale, 2 * scale);
+        }
+      }
+      break;
+
+    case "grass": // 데이터숲 — 풀포기가 속성색으로 돋아 있다
+      ctx.fillRect(px + 2 * scale, py + 9 * scale, p, 4 * scale);
+      ctx.fillRect(px + 3 * scale, py + 7 * scale, p, 6 * scale);
+      ctx.fillRect(px + 4 * scale, py + 9 * scale, p, 4 * scale);
+      ctx.fillRect(px + 9 * scale, py + 8 * scale, p, 5 * scale);
+      ctx.fillRect(px + 10 * scale, py + 6 * scale, p, 7 * scale);
+      ctx.fillRect(px + 11 * scale, py + 8 * scale, p, 5 * scale);
+      ctx.fillRect(px + 6 * scale, py + 3 * scale, p, 4 * scale);
+      ctx.fillRect(px + 13 * scale, py + 2 * scale, p, 4 * scale);
+      break;
+
+    case "signal": // 도시 구역 — 전파를 쏘는 작은 탑
+      ctx.fillRect(px + 7 * scale, py + 4 * scale, 2 * scale, 9 * scale);
+      ctx.fillRect(px + 5 * scale, py + 12 * scale, 6 * scale, p);
+      ctx.fillRect(px + 5 * scale, py + 2 * scale, p, 2 * scale);
+      ctx.fillRect(px + 10 * scale, py + 2 * scale, p, 2 * scale);
+      ctx.fillRect(px + 3 * scale, py + 1 * scale, p, 3 * scale);
+      ctx.fillRect(px + 12 * scale, py + 1 * scale, p, 3 * scale);
+      break;
+
+    case "water": // 물결
+      ctx.fillRect(px + 2 * scale, py + 4 * scale, 5 * scale, p);
+      ctx.fillRect(px + 9 * scale, py + 8 * scale, 5 * scale, p);
+      ctx.fillRect(px + 4 * scale, py + 12 * scale, 5 * scale, p);
+      break;
+
+    case "house": // 연구소·관제실 벽돌
+      ctx.fillRect(px, py + 5 * scale, s, p);
+      ctx.fillRect(px, py + 11 * scale, s, p);
+      ctx.fillRect(px + 7 * scale, py, p, 5 * scale);
+      ctx.fillRect(px + 3 * scale, py + 6 * scale, p, 5 * scale);
+      ctx.fillRect(px + 12 * scale, py + 6 * scale, p, 5 * scale);
+      break;
+
+    case "road": // 길 — 자갈 몇 알
+      ctx.fillRect(px + 3 * scale, py + 5 * scale, p, p);
+      ctx.fillRect(px + 11 * scale, py + 3 * scale, p, p);
+      ctx.fillRect(px + 7 * scale, py + 12 * scale, p, p);
+      break;
+
+    default: // 땅 — 풀 한 포기
+      ctx.fillRect(px + 5 * scale, py + 6 * scale, p, 2 * scale);
+      ctx.fillRect(px + 12 * scale, py + 11 * scale, p, 2 * scale);
   }
 }
 

@@ -650,6 +650,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
 .tut-chip.c { background: #3a6ea5; }
 .tut-chip.p { background: #c9642a; }
 .tut-chip.d { background: #6b4a9e; }
+/* 데이터 도시 구역 */
+.tut-chip.x { background: #c2407a; }
+.tut-chip.y { background: #2f8f8f; }
+.tut-chip.z { background: #c0392b; }
 .tut-good { color: var(--good); font-weight: 800; }
 .tut-bad { color: var(--bad); font-weight: 800; }
 .tut-foot {

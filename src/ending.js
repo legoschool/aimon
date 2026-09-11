@@ -18,6 +18,11 @@
 const END_TILE = 16;
 const END_SCALE = 2;
 
+/* 이 엔딩이 다루는 몬스터 — 지금 있는 마을의 것만 */
+function endMonsters() {
+  return monstersOfStage(currentStage());
+}
+
 const ending = {
   ctx: null,
   timer: null,
@@ -65,11 +70,11 @@ function openEndingSummary() {
   const canvas = document.getElementById("endCanvas");
   ending.ctx = setupCanvas(canvas, MAP_W * END_TILE, MAP_H * END_TILE, END_SCALE);
   ending.wave = 99;
-  ending.shown = MONSTERS.length;
+  ending.shown = endMonsters().length;
   ending.sparks = [];
   drawEndingFrame();
 
-  setCaption("AI 마을이 깨끗해졌습니다");
+  setCaption(stageName() + josa(stageName(), "이", "가") + " 깨끗해졌습니다");
   showEndingBody();
 }
 
@@ -113,9 +118,10 @@ function playEndingScene() {
       for (let i = 0; i < 2; i++) {
         const ang = Math.random() * Math.PI * 2;
         const r = ending.wave * END_TILE * END_SCALE;
+        const c = finalSpot();
         ending.sparks.push({
-          x: (FINAL_SPOT.x + 0.5) * END_TILE * END_SCALE + Math.cos(ang) * r,
-          y: (FINAL_SPOT.y + 0.5) * END_TILE * END_SCALE + Math.sin(ang) * r,
+          x: (c.x + 0.5) * END_TILE * END_SCALE + Math.cos(ang) * r,
+          y: (c.y + 0.5) * END_TILE * END_SCALE + Math.sin(ang) * r,
           vx: Math.cos(ang) * 0.7,
           vy: Math.sin(ang) * 0.7 - 0.5,
           size: 2 + Math.random() * 4,
@@ -132,18 +138,19 @@ function playEndingScene() {
         saidGather = true;
         setCaption("가치몬들이 마을로 돌아옵니다");
       }
+      const total = endMonsters().length;
       const p = (t - END_T.spread) / (END_T.monsters - END_T.spread);
-      const want = Math.min(MONSTERS.length, Math.floor(p * MONSTERS.length) + 1);
+      const want = Math.min(total, Math.floor(p * total) + 1);
       while (ending.shown < want) {
         ending.shown++;
-        sfx(ending.shown === MONSTERS.length ? "caught" : "correct");
+        sfx(ending.shown === total ? "caught" : "correct");
       }
     }
 
     /* 3단계 — 마무리 */
     if (t >= END_T.finish && !ending.done) {
       ending.done = true;
-      setCaption("AI 마을이 깨끗해졌습니다");
+      setCaption(stageName() + josa(stageName(), "이", "가") + " 깨끗해졌습니다");
       sfx("purify");
       showEndingBody();
     }
@@ -173,11 +180,11 @@ function stopEndingScene() {
 function skipEnding() {
   stopEndingScene();
   ending.wave = 99;
-  ending.shown = MONSTERS.length;
+  ending.shown = endMonsters().length;
   ending.sparks = [];
   ending.done = true;
   drawEndingFrame();
-  setCaption("AI 마을이 깨끗해졌습니다");
+  setCaption(stageName() + josa(stageName(), "이", "가") + " 깨끗해졌습니다");
   showEndingBody();
 }
 
@@ -194,8 +201,9 @@ function drawEndingFrame() {
   if (!ctx) return;
 
   // 빛이 지나간 칸부터 밝아진다. 가장자리는 2.4칸에 걸쳐 부드럽게 넘어간다.
-  const cx = FINAL_SPOT.x;
-  const cy = FINAL_SPOT.y;
+  const center = finalSpot();
+  const cx = center.x;
+  const cy = center.y;
   const w = ending.wave;
   drawMap(ctx, END_TILE, END_SCALE, function (x, y) {
     if (w >= 99) return 1;
@@ -205,9 +213,11 @@ function drawEndingFrame() {
   });
 
   // 돌아온 가치몬들 — 막 나타난 한 마리만 옅게 시작한다
-  for (let i = 0; i < ending.shown && i < MONSTERS.length; i++) {
-    const m = MONSTERS[i];
-    const spot = HOME_SPOTS[m.id];
+  const mons = endMonsters();
+  const spots = homeSpots();
+  for (let i = 0; i < ending.shown && i < mons.length; i++) {
+    const m = mons[i];
+    const spot = spots[m.id];
     if (!spot) continue;
 
     ctx.globalAlpha = ending.shown - i >= 2 ? 1 : 0.55;
@@ -229,8 +239,8 @@ function drawEndingFrame() {
     ctx,
     sp.grid,
     PLAYER_PALETTE,
-    FINAL_SPOT.x * END_TILE * END_SCALE,
-    (FINAL_SPOT.y + 1) * END_TILE * END_SCALE,
+    center.x * END_TILE * END_SCALE,
+    (center.y + 1) * END_TILE * END_SCALE,
     END_SCALE,
     sp.flip
   );
@@ -263,7 +273,7 @@ function renderEndingBody(container) {
   head.className = "end-head";
   head.innerHTML =
     '<p class="end-badge">ALL CLEAR</p>' +
-    "<h2>AI 마을이 깨끗해졌습니다</h2>" +
+    "<h2>" + escapeHtml(stageName()) + josa(stageName(), "이", "가") + " 깨끗해졌습니다</h2>" +
     '<p class="end-who">' +
     escapeHtml(displayName() || "탐험가") +
     " · " +
@@ -274,7 +284,8 @@ function renderEndingBody(container) {
   /* ---- 큰 숫자 ---- */
   const tiles = document.createElement("div");
   tiles.className = "rep-tiles";
-  tiles.appendChild(tile("정화한 AI몬스터", MONSTERS.length + " / " + MONSTERS.length));
+  const mons = endMonsters();
+  tiles.appendChild(tile("정화한 AI몬스터", mons.length + " / " + mons.length));
   tiles.appendChild(
     tile("전체 정답률", Math.round(all.rate * 100) + "%", all.right + " / " + all.asked + "문제")
   );
@@ -289,7 +300,7 @@ function renderEndingBody(container) {
 
   const list = document.createElement("div");
   list.className = "end-lessons";
-  MONSTERS.forEach(function (m) {
+  mons.forEach(function (m) {
     const row = document.createElement("div");
     row.className = "end-lesson" + (m.finalBoss ? " final" : "");
 
@@ -311,14 +322,15 @@ function renderEndingBody(container) {
   container.appendChild(list);
 
   /* ---- 교실 밖으로 가지고 나갈 것 ---- */
+  const ids = toolsForStage(currentStage());
   const t2 = document.createElement("h3");
   t2.className = "end-sec";
-  t2.textContent = "교실 밖에서도 쓰는 네 가지 질문";
+  t2.textContent = "교실 밖에서도 쓰는 " + ["", "한", "두", "세", "네", "다섯"][ids.length] + " 가지 질문";
   container.appendChild(t2);
 
   const tools = document.createElement("div");
   tools.className = "end-tools";
-  Object.keys(TOOLS).forEach(function (id) {
+  ids.forEach(function (id) {
     const s = save.toolStats[id];
     const rate = s.asked > 0 ? Math.round((s.right / s.asked) * 100) + "%" : "—";
     const c = document.createElement("div");
@@ -336,22 +348,47 @@ function renderEndingBody(container) {
   const words = document.createElement("div");
   words.className = "end-words";
   words.innerHTML =
-    "<p>이 게임에서 이긴 방법은 답을 <b>빨리</b> 고르는 것이 아니었어요. " +
-    "상황을 끝까지 읽고, 누구의 것인지 묻고, 누가 다칠지 헤아리고, " +
-    "내가 왜 이걸 하려는지 들여다본 것이었어요.</p>" +
-    "<p>AI는 앞으로 더 똑똑해집니다. 그래서 더 귀해지는 건 " +
-    "<b>답을 아는 사람</b>이 아니라 <b>무엇이 옳은지 묻는 사람</b>이에요.</p>" +
-    "<p>생각멈춤몬은 완전히 사라지지 않아요. 바쁠 때, 귀찮을 때, " +
-    "남들이 다 그렇게 할 때 다시 찾아옵니다. " +
-    "그때 <b>한 번 더 생각하는 것</b> — 그게 오늘 여러분이 얻은 진짜 힘이에요.</p>";
+    currentStage() === 1
+      ? "<p>이 게임에서 이긴 방법은 답을 <b>빨리</b> 고르는 것이 아니었어요. " +
+        "상황을 끝까지 읽고, 누구의 것인지 묻고, 누가 다칠지 헤아리고, " +
+        "내가 왜 이걸 하려는지 들여다본 것이었어요.</p>" +
+        "<p>AI는 앞으로 더 똑똑해집니다. 그래서 더 귀해지는 건 " +
+        "<b>답을 아는 사람</b>이 아니라 <b>무엇이 옳은지 묻는 사람</b>이에요.</p>" +
+        "<p>생각멈춤몬은 완전히 사라지지 않아요. 바쁠 때, 귀찮을 때, " +
+        "남들이 다 그렇게 할 때 다시 찾아옵니다. " +
+        "그때 <b>한 번 더 생각하는 것</b> — 그게 오늘 여러분이 얻은 진짜 힘이에요.</p>"
+      : "<p>마을에서는 <b>내가 하는 일</b>을 살폈어요. " +
+        "베끼지 않기, 함부로 올리지 않기, 안 알아보고 퍼뜨리지 않기.</p>" +
+        "<p>도시에서는 <b>나에게 일어나는 일</b>을 살폈어요. " +
+        "누가 화면에서 빠졌는지, 판단을 누구에게 넘겼는지, " +
+        "이 알림이 누구를 위한 것인지.</p>" +
+        "<p>제일 중요한 걸 하나만 기억한다면 이거예요. " +
+        "영상을 한 시간 본 것도, 알림에 끌려다닌 것도 " +
+        "<b>여러분 마음이 약해서가 아닙니다.</b> " +
+        "그렇게 만들어져 있었어요. 그걸 알아채는 순간부터 " +
+        "여러분은 끌려다니는 쪽이 아니라 <b>고르는 쪽</b>이 됩니다.</p>" +
+        "<p>다들 그렇게 해도 나는 물어볼 수 있어요. " +
+        "무엇이 옳은지 정하는 건 사람이고, <b>그 사람은 나여야 합니다.</b></p>";
   container.appendChild(words);
 
   /* ---- 버튼 ---- */
   const row = document.createElement("div");
   row.className = "end-btns no-print";
 
+  // 마을을 끝냈으면 다음 마을이 열린다. 가장 크게 보여야 할 버튼이다.
+  if (nextStageOpen()) {
+    const bNext = document.createElement("button");
+    bNext.className = "btn primary big";
+    bNext.textContent = "🏙  데이터 도시로 떠나기";
+    bNext.onclick = function () {
+      sfx("caught");
+      enterStage(2);
+    };
+    row.appendChild(bNext);
+  }
+
   const bRep = document.createElement("button");
-  bRep.className = "btn primary";
+  bRep.className = "btn" + (nextStageOpen() ? "" : " primary");
   bRep.textContent = "내 기록 보기";
   bRep.onclick = function () { openReport("ending"); };
   row.appendChild(bRep);

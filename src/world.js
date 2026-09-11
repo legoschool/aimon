@@ -13,8 +13,8 @@ const TILE = 16;
 const MAP_SCALE = 2; // 정수배만! 320×224 → 640×448
 
 const world = {
-  x: START.x,
-  y: START.y,
+  x: 0, // initWorld 에서 지금 스테이지의 시작 칸으로 채운다
+  y: 0,
   dir: "down",
   frame: 0,
   steps: 0,
@@ -28,11 +28,8 @@ const world = {
   lastZone: null,
 };
 
-/* 가짜몬은 허위정보 숲 안쪽 고정 자리에 나타난다 */
-const BOSS_SPOT = { x: 17, y: 2 };
-
-/* 마지막 보스는 지도 한복판 — 두 길이 만나는 자리에 나타난다 */
-const FINAL_SPOT = { x: 11, y: 6 };
+/* 중간 보스와 마지막 보스가 설 자리는 스테이지마다 다르다.
+   data/map.js 의 bossSpot() · finalSpot() 이 알려 준다. */
 
 /* 마지막 보스를 뺀 여섯 마리 중 몇 마리를 정화했는가 */
 function regularCaughtCount() {
@@ -43,8 +40,9 @@ function regularCaughtCount() {
 
 function initWorld(canvas) {
   world.ctx = setupCanvas(canvas, MAP_W * TILE, MAP_H * TILE, MAP_SCALE);
-  world.x = START.x;
-  world.y = START.y;
+  const st = startSpot();
+  world.x = st.x;
+  world.y = st.y;
   world.dir = "down";
   world.frame = 0;
   world.steps = 0;
@@ -59,8 +57,9 @@ function initWorld(canvas) {
 
 /* 어떤 속성의 풀숲 칸을 모두 모은다 */
 function zoneTiles(typeId) {
-  const ch = Object.keys(ENCOUNTER_TILE).filter(function (k) {
-    return ENCOUNTER_TILE[k] === typeId;
+  const tiles = encounterTiles();
+  const ch = Object.keys(tiles).filter(function (k) {
+    return tiles[k] === typeId;
   })[0];
   const list = [];
   for (let y = 0; y < MAP_H; y++) {
@@ -86,20 +85,23 @@ function freeSpotIn(typeId, skipId) {
 /* 아직 정화하지 않은 몬스터를 모두 맵에 세운다 */
 function spawnAll() {
   world.spawns = [];
-  MONSTERS.forEach(function (m) {
+  // 지금 있는 마을의 몬스터만 세운다
+  monstersOfStage(currentStage()).forEach(function (m) {
     if (isCaught(m.id)) return;
 
     // 마지막 보스 — 여섯을 모두 정화해야 한복판에 나타난다
     if (m.finalBoss) {
       if (!allRegularCaught()) return;
-      world.spawns.push({ id: m.id, x: FINAL_SPOT.x, y: FINAL_SPOT.y });
+      const f = finalSpot();
+      world.spawns.push({ id: m.id, x: f.x, y: f.y });
       return;
     }
 
     // 가짜몬 — 3마리 이상 정화해야 나타나고, 자리는 고정이다
     if (m.boss) {
       if (regularCaughtCount() < 3) return;
-      world.spawns.push({ id: m.id, x: BOSS_SPOT.x, y: BOSS_SPOT.y });
+      const b = bossSpot();
+      world.spawns.push({ id: m.id, x: b.x, y: b.y });
       return;
     }
 
@@ -124,14 +126,16 @@ function updateSpawnAfterBattle(monsterId) {
     // 여섯을 모두 채우는 순간 마지막 보스가 한복판에 나타난다
     const last = finalBossMonster();
     if (last && !isCaught(last.id) && allRegularCaught() && !onMap(function (x) { return x.finalBoss; })) {
-      world.spawns.push({ id: last.id, x: FINAL_SPOT.x, y: FINAL_SPOT.y });
+      const f = finalSpot();
+      world.spawns.push({ id: last.id, x: f.x, y: f.y });
       return "final";
     }
 
     // 3마리를 채우는 순간 가짜몬이 등장한다
-    const boss = MONSTERS.filter(function (x) { return x.boss; })[0];
+    const boss = monstersOfStage(currentStage()).filter(function (x) { return x.boss; })[0];
     if (boss && !isCaught(boss.id) && regularCaughtCount() >= 3 && !onMap(function (x) { return x.boss; })) {
-      world.spawns.push({ id: boss.id, x: BOSS_SPOT.x, y: BOSS_SPOT.y });
+      const b = bossSpot();
+      world.spawns.push({ id: boss.id, x: b.x, y: b.y });
       return "boss";
     }
     return null;
@@ -232,7 +236,7 @@ function moveWorld(dir) {
 
 function announceZone() {
   const ch = tileAt(world.x, world.y);
-  const name = ZONE_NAME[ch] || "";
+  const name = zoneNames()[ch] || "";
   if (name !== world.lastZone) {
     world.lastZone = name;
     if (world.onZone) world.onZone(name);
@@ -257,7 +261,8 @@ function remainingHint() {
 
   // 마지막 관문이 열렸는가
   if (last && !isCaught(last.id) && allRegularCaught()) {
-    return "지도 한복판에 " + last.name + "이(가) 나타났어요. 마지막 관문이에요!";
+    return "지도 한복판에 " + last.name + josa(last.name, "이", "가") +
+      " 나타났어요. 마지막 관문이에요!";
   }
   if (last && isCaught(last.id)) {
     return "모든 AI몬스터를 정화했어요. 당신은 진짜 " + last.purified.name + "예요!";
@@ -270,10 +275,11 @@ function remainingHint() {
 
   const boss = left.filter(function (m) { return m.boss; })[0];
   if (left.length === 1 && boss) {
-    return "마지막 " + boss.name + "이(가) 허위정보 데이터숲에서 기다려요.";
+    return "마지막 " + boss.name + josa(boss.name, "이", "가") + " 기다리고 있어요.";
   }
   if (boss && regularCaughtCount() < 3) {
-    return "아직 " + left.length + "마리 · " + boss.name + "은(는) 3마리를 정화해야 나타나요.";
+    return "아직 " + left.length + "마리 · " + boss.name +
+      josa(boss.name, "은", "는") + " 3마리를 정화해야 나타나요.";
   }
   return "아직 " + left.length + "마리 남았어요. 풀숲 위의 몬스터에게 다가가 보세요.";
 }

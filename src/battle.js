@@ -86,7 +86,7 @@ function startBattle(monster, dom, onEnd) {
   updateGauges();
 
   showMessage(
-    "앗! 야생 <b>" + monster.name + "</b>이(가) 나타났다!",
+    "앗! 야생 <b>" + monster.name + "</b>" + josa(monster.name, "이", "가") + " 나타났다!",
     monster.desc,
     "맞설 준비를 한다",
     function () {
@@ -179,7 +179,8 @@ function updateGauges() {
 
   d.monName.textContent = m.name;
   d.monLv.textContent = "Lv." + m.level;
-  d.monType.textContent = TYPES[m.type].name;
+  // 속성이 둘이면 둘 다 보여 준다 — 상성이 반쪽만 맞는다는 뜻이다
+  d.monType.textContent = TYPES[m.type].name + (m.type2 ? " · " + TYPES[m.type2].name : "");
   d.monType.style.background = TYPES[m.type].accent;
 
   const gripPct = Math.max(0, (battle.grip / m.maxGrip) * 100);
@@ -207,11 +208,14 @@ function updateGauges() {
         check.needMore + "번 더 맞혀서 완전히 몰아내요."
       : "아직 힘이 남아 있어요. " + check.needMore + "번은 더 맞혀야 해요.";
   } else if (!check.gripOk && !check.accOk) {
-    d.catchHint.textContent = "장악력을 더 낮추고, 정답률도 60% 이상이어야 해요.";
+    d.catchHint.textContent =
+      "장악력을 더 낮추고, 정답률도 " + accPct() + "% 이상이어야 해요.";
   } else if (!check.gripOk) {
-    d.catchHint.textContent = "장악력이 30% 이하로 내려가야 볼을 던질 수 있어요.";
+    d.catchHint.textContent =
+      "장악력이 " + gripPctLimit() + "% 이하로 내려가야 볼을 던질 수 있어요.";
   } else {
-    d.catchHint.textContent = "정답률이 60% 이상이어야 볼을 던질 수 있어요.";
+    d.catchHint.textContent =
+      "정답률이 " + accPct() + "% 이상이어야 볼을 던질 수 있어요.";
   }
 }
 
@@ -321,17 +325,19 @@ function renderToolChoice() {
   const head = document.createElement("p");
   head.className = "panel-head";
   head.textContent = isFinal
-    ? "생각멈춤몬에게는 한 가지 눈으로 맞설 수 없어요. 방금 쓴 도구는 잠깁니다."
+    ? battle.monster.name + "에게는 한 가지 눈으로 맞설 수 없어요. 방금 쓴 도구는 잠깁니다."
     : "어떤 판단 도구로 맞설까?";
   p.appendChild(head);
 
   const grid = document.createElement("div");
   grid.className = "tool-grid";
 
-  Object.keys(TOOLS).forEach(function (id) {
+  toolsForStage(stageOf(battle.monster)).forEach(function (id) {
     const t = TOOLS[id];
-    const mult = getTypeMultiplier(id, battle.monster.type);
-    const left = getQuestions(battle.monster.type, id).filter(function (q) {
+    const mult = getTypeMultiplier(id, battle.monster.type, battle.monster.type2);
+    const left = getQuestions(
+      battle.monster.type, id, battle.monster.type2, stageOf(battle.monster)
+    ).filter(function (q) {
       return battle.usedIds.indexOf(q.id) === -1;
     }).length;
     const justUsed = blocked === id;
@@ -502,7 +508,7 @@ function grade(choice) {
   if (correct) {
     battle.right++;
     battle.streak++;
-    dmg = calcDamage(toolId, battle.monster.type, battle.streak);
+    dmg = calcDamage(toolId, battle.monster.type, battle.streak, battle.monster.type2);
     battle.grip = Math.max(0, battle.grip - dmg.amount);
     sfx("correct");
     setTimeout(function () { sfx("hit"); }, 260);
@@ -715,7 +721,8 @@ function afterResult() {
     sfx("lose");
     showMessage(
       "신뢰도가 바닥났어요...",
-      battle.monster.name + "이(가) 안개 속으로 사라졌어요. 해설을 떠올리며 다시 도전해 봐요.",
+      battle.monster.name + josa(battle.monster.name, "이", "가") +
+        " 안개 속으로 사라졌어요. 해설을 떠올리며 다시 도전해 봐요.",
       "돌아가기",
       function () {
         endBattle("lose");
@@ -808,7 +815,7 @@ function throwBall(ballId) {
   battle.phase = "throw";
   const p = panel();
   p.innerHTML = '<div class="msg-box"><p class="msg-title">' +
-    BALLS[ballId].name + "을(를) 던졌다!</p></div>";
+    BALLS[ballId].name + josa(BALLS[ballId].name, "을", "를") + " 던졌다!</p></div>";
 
   sfx("throwBall");
   animateThrow(shakes, caught);
@@ -936,7 +943,8 @@ function onCaught() {
   sfx("caught");
 
   showMessage(
-    "잡았다! <b>" + battle.monster.name + "</b>을(를) 붙잡았어요!",
+    "잡았다! <b>" + battle.monster.name + "</b>" +
+      josa(battle.monster.name, "을", "를") + " 붙잡았어요!",
     "이제 정화해서 가치몬으로 되돌립니다.",
     "정화하기",
     playPurify
@@ -1067,14 +1075,18 @@ function showPurified() {
     const up = document.createElement("p");
     up.className = "purify-boost";
     up.innerHTML =
-      TOOLS[grownTool].icon + " <b>" + TOOLS[grownTool].name + "</b> 이(가) 더 강해졌어요! " +
+      TOOLS[grownTool].icon + " <b>" + TOOLS[grownTool].name + "</b>" +
+      josa(TOOLS[grownTool].name, "이", "가") + " 더 강해졌어요! " +
       "<span>지금 " + Math.round((getToolBoost(grownTool) - 1) * 100) + "% 강화</span>";
     box.appendChild(up);
   }
 
   const note = document.createElement("p");
   note.className = "purify-note";
-  note.textContent = "도감에 등록했어요. (" + dexCaughtCount() + " / " + MONSTERS.length + ")";
+  const st = stageOf(m);
+  note.textContent =
+    "도감에 등록했어요. (" + stageName(st) + " " +
+    stageCaughtCount(st) + " / " + monstersOfStage(st).length + ")";
   box.appendChild(note);
 
   const btn = document.createElement("button");

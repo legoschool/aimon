@@ -66,12 +66,14 @@ function blankSave(name) {
     battles: 0,
     startedAt: null,
     lastPlayed: null,
-    tutorial: { intro: false, battle: false, catchTip: false },
+    tutorial: { intro: false, battle: false, catchTip: false, city: false },
     missionsDone: [], // 달성한 박사님 의뢰 id
     badges: [], // 얻은 증표 id — 사라지지 않고 기록·인쇄에 남는다
     reviewCleared: 0, // 복습으로 지운 문항 수 (누적)
     perfectCatch: false, // 한 문제도 안 틀리고 정화한 적이 있는가
-    endingSeen: false, // 엔딩을 본 적이 있는가 (두 번째부터는 저절로 안 열린다)
+    endingSeen: false, // 1스테이지 엔딩을 본 적이 있는가
+    stage: 1, // 지금 있는 마을 (1 = AI 마을, 2 = 데이터 도시)
+    stagesSeen: [], // 엔딩을 본 스테이지 번호들
   };
 }
 
@@ -187,11 +189,20 @@ function isCaught(id) {
   return save.caught.indexOf(id) !== -1;
 }
 
-/* 마지막 보스까지 정화했는가 — AI 마을이 깨끗해진 상태인지 묻는 말이다.
+/* 지금 있는 마을 — 예전 저장본에는 없으므로 없으면 1이다 */
+function currentStage() {
+  return save.stage || 1;
+}
+
+/* 지금 마을의 마지막 보스까지 정화했는가.
    지도 색, 퀘스트 배너, 엔딩이 모두 이 하나를 보고 움직인다. */
 function villageIsPure() {
-  const last = finalBossMonster();
-  return !!last && isCaught(last.id);
+  return stageCleared(currentStage());
+}
+
+/* 다음 마을이 열렸는가 — 1스테이지를 끝내야 데이터 도시로 갈 수 있다 */
+function nextStageOpen() {
+  return stageCleared(1) && currentStage() === 1;
 }
 
 function dexCaughtCount() {

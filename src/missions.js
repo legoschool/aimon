@@ -10,14 +10,16 @@ function missionDone(id) {
 }
 
 function missionsCleared() {
-  return save.missionsDone.length;
+  return missionsOfStage().filter(function (m) {
+    return missionDone(m.id);
+  }).length;
 }
 
 /* 새로 달성한 의뢰를 찾아 보상을 주고, 그 목록을 돌려준다 */
 function checkMissions() {
   const justDone = [];
 
-  MISSIONS.forEach(function (m) {
+  missionsOfStage().forEach(function (m) {
     if (missionDone(m.id)) return;
     if (!m.goal(save)) return;
 
@@ -34,7 +36,7 @@ function checkMissions() {
 
 /* 지금 진행 중인 의뢰 하나 (화면 위 안내용) */
 function currentMission() {
-  return MISSIONS.filter(function (m) {
+  return missionsOfStage().filter(function (m) {
     return !missionDone(m.id);
   })[0] || null;
 }
@@ -52,7 +54,7 @@ function renderMissions(container) {
     "<b>" + missionsCleared() + " / " + MISSIONS.length + "</b> 완료";
   container.appendChild(head);
 
-  MISSIONS.forEach(function (m, i) {
+  missionsOfStage().forEach(function (m, i) {
     const done = missionDone(m.id);
     const card = document.createElement("div");
     card.className = "mission" + (done ? " done" : "");

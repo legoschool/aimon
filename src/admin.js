@@ -76,7 +76,8 @@ function renderAdminRows(container, rows) {
     note.className = "rep-diag";
     note.innerHTML =
       "<p>반 전체가 <b>" + TYPES[weakest].name +
-      "</b>을(를) 가장 어려워했어요. 다음 시간에 이 주제를 함께 짚어 보면 좋겠어요.</p>";
+      "</b>" + josa(TYPES[weakest].name, "을", "를") +
+      " 가장 어려워했어요. 다음 시간에 이 주제를 함께 짚어 보면 좋겠어요.</p>";
     container.appendChild(note);
   }
 

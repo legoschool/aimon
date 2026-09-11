@@ -402,18 +402,453 @@ MONSTERS.push({
   },
 });
 
-/* 마지막 보스를 뺀 여섯 마리 — 도감·의뢰의 기준이 된다 */
-function regularMonsters() {
-  return MONSTERS.filter((m) => !m.finalBoss);
+
+/* ===========================================================
+   2스테이지 — 데이터 도시
+
+   1스테이지가 "내가 남에게 끼치는 해"라면 여기는
+   "나에게 보이지 않게 일어나는 일"이다.
+   아이는 하는 쪽이 아니라 당하는 쪽에 선다.
+
+   속성이 둘인 몬스터가 셋 있다. 상성이 반쪽만 맞으므로
+   어떤 질문을 쓸지 고르는 일 자체가 어려워진다.
+   =========================================================== */
+
+MONSTERS.push(
+  /* ========== 👀 편향 ========== */
+  {
+    id: "kkirikkiri",
+    name: "끼리끼리몬",
+    type: "bias",
+    stage: 2,
+    level: 12,
+    maxGrip: 110,
+    desc: "비슷한 것만 잔뜩 모아 보여 주고, 나머지는 슬그머니 치운다.",
+    look: "똑같은 눈이 한 줄로 박힌 덩어리. 전부 같은 곳을 본다.",
+    sprite: [
+      "................",
+      ".....kkkkkk.....",
+      "...kkllllllkk...",
+      "..kllllllllllk..",
+      "..kll.ll.ll.lk..",
+      "..kl.a.la.la.k..",
+      "..kll.ll.ll.lk..",
+      "..kllllllllllk..",
+      "..kllaaaaaallk..",
+      "..kllllllllllk..",
+      "...kllllllllk...",
+      "....kkllllkk....",
+      "......kkkk......",
+      ".....k....k.....",
+      "....kk....kk....",
+      "................",
+    ],
+    purified: {
+      id: "duru",
+      name: "두루지기",
+      desc: "화면에 없는 것이 무엇인지 먼저 찾는 눈.",
+      lesson:
+        "추천은 내가 좋아할 것을 보여 주면서 내가 모르는 것을 치워요. 무엇이 있는지보다 무엇이 없는지를 먼저 보면 세상이 다시 넓어집니다.",
+      sprite: [
+        "................",
+        ".....kkkkkk.....",
+        "...kkwwwwwwkk...",
+        "..kwwwwwwwwwwk..",
+        "..kww.ww.ww.wk..",
+        "..kwa..w.aw.ak..",
+        "..kww.ww.ww.wk..",
+        "..kwwwwwwwwwwk..",
+        "..kwwaawwaawwk..",
+        "..kwwwwwwwwwwk..",
+        "...kwwwwwwwwk...",
+        "....kkwwwwkk....",
+        "......kkkk......",
+        ".....k....k.....",
+        "....kk....kk....",
+        "................",
+      ],
+    },
+  },
+
+  {
+    id: "ssajaba",
+    name: "싸잡아몬",
+    type: "bias",
+    type2: "disinfo",
+    stage: 2,
+    level: 13,
+    maxGrip: 120,
+    desc: "여럿을 하나로 눌러 찍어 \"다 그렇다\"고 말하게 만든다.",
+    look: "커다란 도장. 눌린 자리마다 얼굴이 납작해져 있다.",
+    sprite: [
+      "................",
+      "....kkkkkkkk....",
+      "....kllllllk....",
+      "....kllllllk....",
+      "....kllllllk....",
+      "...kkllllllkk...",
+      "..kllllllllllk..",
+      "..kl.a.a.a..lk..",
+      "..kllllllllllk..",
+      "..kkkkkkkkkkkk..",
+      "...kaaaaaaaak...",
+      "....kkkkkkkk....",
+      "......k..k......",
+      "......k..k......",
+      ".....kk..kk.....",
+      "................",
+    ],
+    purified: {
+      id: "jeomada",
+      name: "저마다지기",
+      desc: "뭉뚱그린 말 속에서 한 사람씩 다시 보는 눈.",
+      lesson:
+        "\"요즘 애들은 다 그렇다\"는 말에는 아무도 없어요. 한 사람씩 세어 보면 늘 다른 사람이 있습니다.",
+      sprite: [
+        "................",
+        "....kkkkkkkk....",
+        "....kwwwwwwk....",
+        "....kwawwawk....",
+        "....kwwwwwwk....",
+        "...kkwwwwwwkk...",
+        "..kwwwwwwwwwwk..",
+        "..kwa.wa.wwa.k..",
+        "..kwwwwwwwwwwk..",
+        "..kwwwwwwwwwwk..",
+        "...kwaawwaawk...",
+        "....kkwwwwkk....",
+        "......k..k......",
+        "......k..k......",
+        ".....kk..kk.....",
+        "................",
+      ],
+    },
+  },
+
+  /* ========== 🧭 의존 ========== */
+  {
+    id: "sikindaero",
+    name: "시킨대로몬",
+    type: "depend",
+    stage: 2,
+    level: 12,
+    maxGrip: 110,
+    desc: "AI가 알려 준 대로만 움직이게 하고, 왜인지는 묻지 못하게 한다.",
+    look: "머리 위 줄에 매달린 인형. 팔다리가 줄에 끌려다닌다.",
+    sprite: [
+      ".......k........",
+      ".......k........",
+      "....kkkkkkk.....",
+      "...kllllllllk...",
+      "...kl.a..a.lk...",
+      "...kllllllllk...",
+      "...kll.kk.llk...",
+      "...kllllllllk...",
+      "....kkkkkkkk....",
+      ".....k....k.....",
+      "..kkkk....kkkk..",
+      ".....k....k.....",
+      ".....k....k.....",
+      "....kk....kk....",
+      "....k......k....",
+      "................",
+    ],
+    purified: {
+      id: "seusuro",
+      name: "스스로지기",
+      desc: "답을 받고도 왜 그런지 스스로 따라가 보는 힘.",
+      lesson:
+        "AI가 답을 주는 일과 내가 알게 되는 일은 달라요. 왜 그런지 한 줄씩 따라가 본 것만 내 것이 됩니다.",
+      sprite: [
+        "................",
+        ".....a....a.....",
+        "....kkkkkkk.....",
+        "...kwwwwwwwwk...",
+        "...kw.a..a.wk...",
+        "...kwwwwwwwwk...",
+        "...kww.aa.wwk...",
+        "...kwwwwwwwwk...",
+        "....kkkkkkkk....",
+        ".....k....k.....",
+        "..kkkk....kkkk..",
+        ".....k....k.....",
+        ".....k....k.....",
+        "....kk....kk....",
+        "....k......k....",
+        "................",
+      ],
+    },
+  },
+
+  {
+    id: "tteoneomgim",
+    name: "떠넘김몬",
+    type: "depend",
+    stage: 2,
+    level: 14,
+    maxGrip: 130,
+    desc: "잘못이 드러나면 \"AI가 그랬다\"며 옆을 가리키게 만든다.",
+    look: "한 손으로 옆을 가리킨 채 등 뒤로 숨는 형체.",
+    sprite: [
+      "................",
+      "...kkkkkk.......",
+      "..kllllllk......",
+      "..kl.a.a.k......",
+      "..kllllllk......",
+      "..kll..llk......",
+      "..kllllllk......",
+      "..kkkkkkkk......",
+      "...kllllk.kkkk..",
+      "...kllllkkllllk.",
+      "...kllllk.aaaak.",
+      "...kkkkkk.kkkkk.",
+      "....k..k........",
+      "....k..k........",
+      "...kk..kk.......",
+      "................",
+    ],
+    purified: {
+      id: "chaegim",
+      name: "책임지기",
+      desc: "마지막으로 고른 사람이 나라는 것을 아는 힘.",
+      lesson:
+        "도구가 틀릴 수 있다는 걸 알면서 확인하지 않았다면, 정한 사람은 나예요. 책임은 마지막으로 고른 사람에게 남습니다.",
+      sprite: [
+        "................",
+        "...kkkkkk.......",
+        "..kwwwwwwk......",
+        "..kw.a.a.k......",
+        "..kwwwwwwk......",
+        "..kww.aawwk.....",
+        "..kwwwwwwk......",
+        "..kkkkkkkk......",
+        "...kwwwwk.......",
+        "...kwaawk.......",
+        "...kwwwwk.......",
+        "...kkkkkk.......",
+        "....k..k........",
+        "....k..k........",
+        "...kk..kk.......",
+        "................",
+      ],
+    },
+  },
+
+  /* ========== ⏳ 조작 ========== */
+  {
+    id: "hanbeonman",
+    name: "한번만더몬",
+    type: "manipul",
+    type2: "depend",
+    stage: 2,
+    level: 13,
+    maxGrip: 120,
+    desc: "끝나기 전에 다음 것을 띄워, 멈출 자리를 없앤다.",
+    look: "끝없이 아래로 흘러내리는 화면. 바닥이 보이지 않는다.",
+    sprite: [
+      "................",
+      "..kkkkkkkkkkkk..",
+      "..kllllllllllk..",
+      "..kl.a....a..k..",
+      "..kllllllllllk..",
+      "..kllllllllllk..",
+      "..kl.a....a..k..",
+      "..kllllllllllk..",
+      "..kllllllllllk..",
+      "..kl.a....a..k..",
+      "..kllllllllllk..",
+      "..kkkkkkkkkkkk..",
+      ".....kaaaak.....",
+      "......kaak......",
+      ".......kk.......",
+      "................",
+    ],
+    purified: {
+      id: "sigan",
+      name: "시간지기",
+      desc: "멈출 자리를 내가 정하는 힘.",
+      lesson:
+        "계속 보는 데는 아무것도 안 해도 되고, 멈추는 데는 내가 무언가를 해야 해요. 그렇게 만들어 둔 것이지 내 마음이 약한 게 아닙니다.",
+      sprite: [
+        "................",
+        "..kkkkkkkkkkkk..",
+        "..kwwwwwwwwwwk..",
+        "..kw.a....a..k..",
+        "..kwwwwwwwwwwk..",
+        "..kwwaawwaawwk..",
+        "..kwwaawwaawwk..",
+        "..kwwaawwaawwk..",
+        "..kwwwwwwwwwwk..",
+        "..kw.a....a..k..",
+        "..kwwwwwwwwwwk..",
+        "..kkkkkkkkkkkk..",
+        "......kwwk......",
+        "......kwwk......",
+        ".....kkwwkk.....",
+        "................",
+      ],
+    },
+  },
+
+  /* 데이터 도시의 중간 보스 — 셋을 정화해야 나타난다 */
+  {
+    id: "heundeuleo",
+    name: "흔들어몬",
+    type: "manipul",
+    type2: "bias",
+    stage: 2,
+    boss: true,
+    level: 16,
+    maxGrip: 160,
+    desc: "놓칠까 봐, 뒤처질까 봐 마음을 흔들어 서두르게 만든다.",
+    look: "쉬지 않고 울리는 커다란 종. 물결이 사방으로 퍼진다.",
+    sprite: [
+      ".......kk.......",
+      "......kllk......",
+      ".....kllllk.....",
+      "....kllllllk....",
+      "....kllllllk....",
+      "...kllllllllk...",
+      "...kl.a..a.lk...",
+      "..kllllllllllk..",
+      "..kllllllllllk..",
+      ".kkkkkkkkkkkkkk.",
+      ".......kk.......",
+      "..a..........a..",
+      ".a.a........a.a.",
+      "a...a......a...a",
+      "................",
+      "................",
+    ],
+    purified: {
+      id: "jungsim",
+      name: "중심지기",
+      desc: "급한 마음이 들 때 한 박자 늦추는 힘.",
+      lesson:
+        "급하게 만들면 따져 볼 시간이 없어져요. 서두르게 하는 말을 만나면, 그 말이 누구에게 이로운지 먼저 보세요.",
+      sprite: [
+        ".......kk.......",
+        "......kwwk......",
+        ".....kwwwwk.....",
+        "....kwwwwwwk....",
+        "....kwwwwwwk....",
+        "...kwwwwwwwwk...",
+        "...kw.a..a.wk...",
+        "..kwwwwwwwwwwk..",
+        "..kwwwwwwwwwwk..",
+        ".kkkkkkkkkkkkkk.",
+        ".......kk.......",
+        ".......aa.......",
+        ".......aa.......",
+        "......kaak......",
+        ".......kk.......",
+        "................",
+      ],
+    },
+  }
+);
+
+/* ========== 🌑 데이터 도시의 마지막 관문 ==========
+   편향도, 의존도, 조작도 결국 "다들 그러니까"에서 버틴다.
+   1스테이지 생각멈춤몬이 혼자 생각하기를 멈춘 것이라면,
+   이쪽은 여럿이 같이 멈춘 것이다. */
+MONSTERS.push({
+  id: "dadeulgeurae",
+  name: "다들그래몬",
+  type: "all",
+  stage: 2,
+  level: 20,
+  maxGrip: 260,
+  finalBoss: true,
+  desc: "\"다들 그렇게 한다\"는 말로 묻기를 멈추게 만든다. 데이터 도시의 세 그림자가 모두 여기서 나왔다.",
+  look: "한 몸에 붙은 여러 얼굴. 전부 같은 쪽만 바라본다.",
+  sprite: [
+    "................",
+    ".kkkkkkkkkkkkkk.",
+    ".kllllllllllllk.",
+    ".kl.a...a...a.k.",
+    ".kllllllllllllk.",
+    ".klkkllkkllkklk.",
+    ".kllllllllllllk.",
+    ".kl.a...a...a.k.",
+    ".kllllllllllllk.",
+    ".kllllllllllllk.",
+    ".kl.a...a...a.k.",
+    ".kllllllllllllk.",
+    ".kkkkkkkkkkkkkk.",
+    "...k........k...",
+    "..kk........kk..",
+    "................",
+  ],
+  purified: {
+    id: "nadaum",
+    name: "나다움지기",
+    desc: "다들 그래도 나는 한 번 묻는 힘.",
+    lesson:
+      "남들이 다 그렇게 해도 나는 물어볼 수 있어요. 무엇이 옳은지 정하는 건 사람이라고 배웠다면, 그 사람은 나여야 합니다.",
+    sprite: [
+      "................",
+      ".kkkkkkkkkkkkkk.",
+      ".kwwwwwwwwwwwwk.",
+      ".kwa...aa...awk.",
+      ".kwwwwwwwwwwwwk.",
+      ".kww.ww.ww.wwwk.",
+      ".kwwwwwwwwwwwwk.",
+      ".kw.a..aa..a.wk.",
+      ".kwwwwwwwwwwwwk.",
+      ".kwwwwaawwwwwwk.",
+      ".kw.a..aa..a.wk.",
+      ".kwwwwwwwwwwwwk.",
+      ".kkkkkkkkkkkkkk.",
+      "...k........k...",
+      "..kk........kk..",
+      "................",
+    ],
+  },
+});
+
+/* -----------------------------------------------------------
+   스테이지별로 꺼내기
+
+   예전 저장본에는 stage 가 없다. 없으면 1스테이지로 본다.
+   인자를 안 주면 지금 있는 마을을 기준으로 한다.
+   ----------------------------------------------------------- */
+function stageOf(m) {
+  return m.stage || 1;
 }
 
-function finalBossMonster() {
-  return MONSTERS.filter((m) => m.finalBoss)[0];
+function monstersOfStage(stage) {
+  return MONSTERS.filter((m) => stageOf(m) === stage);
+}
+
+/* 마지막 보스를 뺀 여섯 마리 — 도감·의뢰의 기준이 된다 */
+function regularMonsters(stage) {
+  return monstersOfStage(stage || currentStage()).filter((m) => !m.finalBoss);
+}
+
+function finalBossMonster(stage) {
+  return monstersOfStage(stage || currentStage()).filter((m) => m.finalBoss)[0];
 }
 
 /* 여섯을 모두 정화했는가 (마지막 보스가 나타나는 조건) */
-function allRegularCaught() {
-  return regularMonsters().every((m) => isCaught(m.id));
+function allRegularCaught(stage) {
+  return regularMonsters(stage).every((m) => isCaught(m.id));
+}
+
+/* 그 스테이지를 끝냈는가 — 마지막 보스까지 정화했는가 */
+function stageCleared(stage) {
+  const last = finalBossMonster(stage);
+  return !!last && isCaught(last.id);
+}
+
+/* 지금 이 학생이 갈 수 있는 몬스터 — 도시는 마을을 깨야 열린다 */
+function unlockedMonsters() {
+  return MONSTERS.filter((m) => stageOf(m) === 1 || stageCleared(1));
+}
+
+/* 그 스테이지에서 정화한 수 */
+function stageCaughtCount(stage) {
+  return monstersOfStage(stage).filter((m) => isCaught(m.id)).length;
 }
 
 /* 속성별로 몬스터 꺼내기 */

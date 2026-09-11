@@ -33,7 +33,9 @@ function renderReport(container) {
   /* ---- 큰 숫자 3개 ---- */
   const tiles = document.createElement("div");
   tiles.className = "rep-tiles";
-  tiles.appendChild(tile("정화한 AI몬스터", dexCaughtCount() + " / " + MONSTERS.length));
+  tiles.appendChild(
+    tile("정화한 AI몬스터", dexCaughtCount() + " / " + unlockedMonsters().length)
+  );
   tiles.appendChild(
     tile("전체 정답률", Math.round(all.rate * 100) + "%", all.right + " / " + all.asked + "문제")
   );
@@ -215,7 +217,8 @@ function renderClassReport(container) {
     note.className = "rep-diag";
     note.innerHTML =
       "<p>반 전체가 <b>" + TYPES[weakest].name +
-      "</b>을(를) 가장 어려워했어요. 이 주제를 함께 다시 짚어 보면 좋겠어요.</p>";
+      "</b>" + josa(TYPES[weakest].name, "을", "를") +
+      " 가장 어려워했어요. 이 주제를 함께 다시 짚어 보면 좋겠어요.</p>";
     container.appendChild(note);
   }
 
@@ -319,11 +322,35 @@ function diagnose(all) {
     );
   }
 
-  if (dexCaughtCount() === MONSTERS.length) {
+  if (dexCaughtCount() === MONSTERS.length && MONSTERS.length > 0) {
     lines.push("AI몬스터를 모두 정화했어요. 도감을 친구에게 소개해 보세요!");
   }
 
   return lines.map(function (l) { return "<p>" + l + "</p>"; }).join("");
+}
+
+/* -----------------------------------------------------------
+   조사 고르기
+
+   앞말에 받침이 있으면 앞의 것, 없으면 뒤의 것을 쓴다.
+     josa("AI 마을", "이", "가")   → "이"
+     josa("데이터 도시", "이", "가") → "가"
+
+   "이(가)" 같은 괄호 표기는 어른 문서에서는 넘어가지만
+   소리 내어 읽는 아이에게는 걸린다. 이 게임은 아이가 읽는다.
+   ----------------------------------------------------------- */
+function josa(word, withBatchim, without) {
+  const s = String(word).replace(/<[^>]*>/g, "").trim();
+  if (!s) return withBatchim;
+  const code = s.charCodeAt(s.length - 1);
+  if (code < 0xac00 || code > 0xd7a3) return withBatchim; // 한글이 아니면 안전한 쪽
+  const jong = (code - 0xac00) % 28;
+  if (jong === 0) return without;
+  // "(으)로" 는 ㄹ 받침이면 받침 없는 것처럼 쓴다 — "마을로", "도시로"
+  if (jong === 8 && (withBatchim === "으로" || withBatchim === "은")) {
+    return withBatchim === "으로" ? without : withBatchim;
+  }
+  return withBatchim;
 }
 
 function escapeHtml(s) {
