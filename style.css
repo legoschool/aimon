@@ -412,7 +412,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
 .result-explain { margin: 10px 0; font-size: .95rem; line-height: 1.65; }
 .result-dmg { margin: 0 0 14px; font-size: .82rem; font-weight: 700; color: var(--ink-soft); }
 
-/* 판단볼 */
+/* 가치볼 */
 .ball-grid { display: grid; gap: 10px; }
 .ball-btn {
   font: inherit; text-align: left; cursor: pointer;
@@ -712,7 +712,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
    좁은 화면
    ----------------------------------------------------------- */
 @media (max-width: 620px) {
-  body { padding: 10px; }
+  /* 소리 버튼 막대가 흐름 안으로 내려온다.
+     body 가 가로 flex 라서, 줄바꿈을 허용하지 않으면
+     막대가 본문 옆에 나란히 서서 폭을 146px 나 빼앗는다. */
+  body { padding: 10px; flex-wrap: wrap; }
   .battle-top {
     grid-template-columns: 1fr;
     grid-template-areas: "canvas" "mon" "me";
@@ -725,7 +728,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
   .rep-tiles { grid-template-columns: 1fr; }
   .game-title { font-size: 2.3rem; }
 
-  .audio-bar { position: static; justify-content: flex-end; margin-bottom: 8px; }
+  .audio-bar { position: static; width: 100%; justify-content: flex-end; margin-bottom: 8px; }
   .title-btns { flex-direction: column; }
   .tut-box { padding: 16px; }
   .tut-doc { font-size: 2.1rem; top: -20px; }
@@ -738,6 +741,101 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
 /* -----------------------------------------------------------
    인쇄 — 기록만 깔끔하게 나오게
    ----------------------------------------------------------- */
+
+/* ===========================================================
+   엔딩 — AI 마을 정화
+   =========================================================== */
+.end-stage {
+  position: relative;
+  border: 4px solid var(--line);
+  box-shadow: var(--shadow);
+  background: #000;
+  line-height: 0;
+  overflow: hidden;
+}
+#endCanvas { width: 100%; height: auto; }
+
+.end-caption {
+  position: absolute; left: 8px; right: 8px; bottom: 8px; margin: 0;
+  background: rgba(35, 33, 28, .86); color: #fff;
+  padding: 9px 12px; font-size: .95rem; font-weight: 800;
+  line-height: 1.5; text-align: center;
+  pointer-events: none;
+}
+.end-skip {
+  position: absolute; top: 8px; right: 8px;
+  line-height: 1.4;
+}
+
+/* 연출이 끝나면 아래에서 올라온다 */
+.end-body {
+  opacity: 0; transform: translateY(10px);
+  transition: opacity .5s, transform .5s;
+  pointer-events: none;
+}
+.end-body.on { opacity: 1; transform: none; pointer-events: auto; }
+
+.end-head { text-align: center; margin: 18px 0 14px; }
+.end-badge {
+  display: inline-block; margin: 0 0 6px;
+  background: var(--good); color: #fff;
+  padding: 3px 12px; font-size: .74rem; font-weight: 800; letter-spacing: 2px;
+}
+.end-head h2 { margin: 0; font-size: 1.65rem; line-height: 1.25; }
+.end-who { margin: 4px 0 0; font-size: .88rem; font-weight: 700; color: var(--ink-soft); }
+
+.end-sec {
+  margin: 24px 0 10px; font-size: 1.05rem;
+  border-bottom: 3px solid var(--line); padding-bottom: 5px;
+}
+
+/* 일곱 가지 배운 것 */
+.end-lessons { display: flex; flex-direction: column; gap: 8px; }
+.end-lesson {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: var(--panel); border: 3px solid var(--line);
+  padding: 10px 12px;
+}
+.end-lesson.final { background: #eaf3ea; border-color: var(--good); }
+.end-lesson img { width: 48px; height: 48px; flex: 0 0 auto; }
+.el-text { min-width: 0; }
+.el-text b { font-size: 1rem; }
+.el-from { font-size: .72rem; color: var(--ink-soft); font-weight: 700; margin-left: 6px; }
+.el-text p { margin: 3px 0 0; font-size: .88rem; line-height: 1.55; }
+
+/* 네 가지 질문 */
+.end-tools { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.end-tool {
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--paper); border: 3px solid var(--line); padding: 10px;
+}
+.et-icon { font-size: 1.3rem; line-height: 1.2; }
+.end-tool b { font-size: .95rem; }
+.et-desc { font-size: .8rem; color: var(--ink-soft); line-height: 1.5; }
+.et-rate { font-size: .74rem; font-weight: 800; margin-top: 3px; }
+
+/* 마지막 말 */
+.end-words {
+  margin: 20px 0 0; padding: 16px;
+  background: var(--panel); border: 3px solid var(--line); box-shadow: var(--shadow-sm);
+}
+.end-words p { margin: 0 0 10px; font-size: .95rem; line-height: 1.75; }
+.end-words p:last-child { margin-bottom: 0; }
+.end-words b { color: var(--good); }
+
+.end-btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 8px; }
+
+@media (max-width: 520px) {
+  .end-tools { grid-template-columns: 1fr; }
+  .end-head h2 { font-size: 1.35rem; }
+}
+
+.rep-clear {
+  margin: 0 0 14px; padding: 9px 12px; text-align: center;
+  background: #eaf3ea; border: 3px solid var(--good);
+  font-weight: 800; font-size: .95rem;
+}
+
 @media print {
   body { padding: 0; background: #fff; }
   .no-print, .sheet-head { display: none !important; }
@@ -745,5 +843,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
   .report-body { border: none; box-shadow: none; padding: 0; }
   .rep-wrong, .rep-tile, .rep-value, .rep-diag,
   .rep-badge, .rep-hint { break-inside: avoid; }
+  /* 엔딩 — 움직이는 그림은 빼고 배운 것만 인쇄한다 */
+  .end-stage { display: none !important; }
+  .end-body { opacity: 1 !important; transform: none !important; }
+  .end-lesson, .end-tool, .end-words { break-inside: avoid; }
+  .end-sec { break-after: avoid; }
   .rep-section { break-after: avoid; }
 }

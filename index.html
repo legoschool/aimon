@@ -69,6 +69,7 @@
     <button id="btnReview" class="btn small">복습</button>
     <button id="btnBadges" class="btn small">증표</button>
     <button id="btnDex" class="btn small">도감</button>
+    <button id="btnEnding" class="btn small" style="display:none">엔딩</button>
     <button id="btnReport" class="btn small">기록</button>
     <button id="btnTitleBack" class="btn small">나가기</button>
   </header>
@@ -224,6 +225,16 @@
   <div id="classBody" class="report-body"></div>
 </section>
 
+<!-- ================= 엔딩 (AI 마을 정화) ================= -->
+<section id="screen-ending" class="screen">
+  <div class="end-stage">
+    <canvas id="endCanvas" aria-label="정화된 AI 마을"></canvas>
+    <p id="endCaption" class="end-caption"></p>
+    <button id="endSkip" class="btn tiny end-skip no-print">건너뛰기 ▶▶</button>
+  </div>
+  <div id="endBody" class="end-body"></div>
+</section>
+
 <!-- ================= 안내 (튜토리얼) ================= -->
 <div id="tutorial" class="tutorial">
   <div class="tut-box">
@@ -259,6 +270,7 @@
 <script src="src/review.js"></script>
 <script src="src/tutorial.js"></script>
 <script src="src/world.js"></script>
+<script src="src/ending.js"></script>
 <script src="src/battle.js"></script>
 <script src="src/main.js"></script>
 </body>

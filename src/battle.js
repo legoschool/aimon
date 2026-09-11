@@ -1079,7 +1079,8 @@ function showPurified() {
 
   const btn = document.createElement("button");
   btn.className = "btn primary";
-  btn.textContent = "도감에 넣고 돌아가기";
+  // 마지막 한 마리라면 다음 화면이 엔딩이다. 그 사실을 버튼이 미리 말해 준다.
+  btn.textContent = m.finalBoss ? "AI 마을로 나가기" : "도감에 넣고 돌아가기";
   btn.onclick = function () {
     endBattle("caught");
   };

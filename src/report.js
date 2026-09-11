@@ -22,6 +22,14 @@ function renderReport(container) {
     "</p>";
   container.appendChild(head);
 
+  // 마을을 정화했으면 인쇄물 맨 위에도 남는다
+  if (villageIsPure()) {
+    const clear = document.createElement("p");
+    clear.className = "rep-clear";
+    clear.textContent = "★ AI 마을 정화 완료 — 일곱 AI몬스터를 모두 되돌렸어요";
+    container.appendChild(clear);
+  }
+
   /* ---- 큰 숫자 3개 ---- */
   const tiles = document.createElement("div");
   tiles.className = "rep-tiles";

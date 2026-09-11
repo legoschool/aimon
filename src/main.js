@@ -13,7 +13,7 @@ let current = "title";
    시작
    ----------------------------------------------------------- */
 window.addEventListener("DOMContentLoaded", function () {
-  ["title", "map", "battle", "dex", "report", "class", "missions", "review", "badges", "admin"]
+  ["title", "map", "battle", "dex", "report", "class", "missions", "review", "badges", "admin", "ending"]
     .forEach(function (id) {
       screens[id] = document.getElementById("screen-" + id);
     });
@@ -112,6 +112,8 @@ window.addEventListener("DOMContentLoaded", function () {
   document.getElementById("btnReview").onclick = function () { openReview("map"); };
   document.getElementById("btnBadges").onclick = function () { openBadges("map"); };
   document.getElementById("btnBadgesBack").onclick = closeOverlay;
+  document.getElementById("btnEnding").onclick = function () { sfx("button"); openEndingSummary(); };
+  document.getElementById("endSkip").onclick = skipEnding;
   document.getElementById("btnReviewBack").onclick = function () {
     clearLock();
     closeOverlay();
@@ -322,6 +324,8 @@ function closeOverlay() {
   if (overlayFrom === "title") {
     show("title");
     renderStudentList();
+  } else if (overlayFrom === "ending") {
+    openEndingSummary();
   } else {
     show("map");
     drawWorld();
@@ -362,6 +366,9 @@ function updateHud() {
   rBtn.textContent = n > 0 ? "복습 " + n : "복습";
   rBtn.classList.toggle("has-work", n > 0);
 
+  // 마을을 정화했으면 엔딩을 언제든 다시 볼 수 있게 한다
+  document.getElementById("btnEnding").style.display = villageIsPure() ? "" : "none";
+
   renderQuestBanner();
 }
 
@@ -369,6 +376,17 @@ function updateHud() {
 function renderQuestBanner() {
   const box = document.getElementById("questBanner");
   const now = currentMission();
+
+  // 마을을 정화했으면 그 사실이 가장 크게 보여야 한다
+  if (villageIsPure()) {
+    box.classList.add("done");
+    box.querySelector(".q-label").textContent = "CLEAR";
+    box.querySelector(".q-title").textContent = "AI 마을 정화 완료!";
+    box.querySelector(".q-desc").textContent =
+      "일곱 가치몬이 모두 돌아왔어요. 위의 엔딩 버튼으로 다시 볼 수 있어요.";
+    box.querySelector(".q-progress").textContent = "7 / 7";
+    return;
+  }
 
   if (now) {
     box.classList.remove("done");
@@ -477,11 +495,14 @@ function onBattleEnd(reason, refilled) {
     delay += 3200;
   }
 
-  // 마지막 보스까지 정화하면 기록을 펼쳐 보여 준다
-  if (dexCaughtCount() === MONSTERS.length) {
+  // 마지막 보스까지 정화하면 엔딩으로 넘어간다.
+  // 예전에는 기록 화면이 슬쩍 열릴 뿐이라 끝난 줄도 몰랐다.
+  // 알림이 여러 개 쌓여도 오래 기다리게 하지 않는다.
+  // 증표는 엔딩 안에도 적히니 여기서 다 보여 줄 필요가 없다.
+  if (villageIsPure()) {
     setTimeout(function () {
-      openReport("map");
-    }, delay + 400);
+      openEnding();
+    }, Math.min(delay + 400, 2800));
   }
 }
 

@@ -60,17 +60,33 @@ function drawSpriteSilhouette(ctx, grid, px, py, scale, color, flip) {
 }
 
 /* -----------------------------------------------------------
+   색 섞기 — 어두운 색에서 밝은 색으로 서서히 넘어갈 때 쓴다
+   t = 0 이면 첫 색, 1 이면 둘째 색.
+   ----------------------------------------------------------- */
+function mixHex(a, b, t) {
+  if (t <= 0 || a === b) return a;
+  if (t >= 1) return b;
+  const ar = parseInt(a.slice(1, 3), 16), ag = parseInt(a.slice(3, 5), 16), ab = parseInt(a.slice(5, 7), 16);
+  const br = parseInt(b.slice(1, 3), 16), bg = parseInt(b.slice(3, 5), 16), bb = parseInt(b.slice(5, 7), 16);
+  return "rgb(" + Math.round(ar + (br - ar) * t) + "," +
+                  Math.round(ag + (bg - ag) * t) + "," +
+                  Math.round(ab + (bb - ab) * t) + ")";
+}
+
+/* -----------------------------------------------------------
    맵 타일 한 칸
    단색이면 심심하므로 칸마다 점무늬를 조금 얹는다.
    숲 타일은 점이 속성색이라, 어느 숲인지 색으로 구분된다.
    ----------------------------------------------------------- */
-function drawTile(ctx, ch, px, py, size, scale) {
-  const style = TILE_STYLE[ch] || TILE_STYLE["."];
+function drawTile(ctx, ch, px, py, size, scale, purity) {
+  const dark = TILE_STYLE[ch] || TILE_STYLE["."];
+  const pure = PURE_TILE_STYLE[ch] || dark;
+  const t = purity || 0;
   const s = size * scale;
-  ctx.fillStyle = style.base;
+  ctx.fillStyle = mixHex(dark.base, pure.base, t);
   ctx.fillRect(px, py, s, s);
 
-  ctx.fillStyle = style.dot;
+  ctx.fillStyle = mixHex(dark.dot, pure.dot, t);
   const p = scale; // 점 하나 크기
 
   if (ch === "#") {
@@ -113,10 +129,14 @@ function drawTile(ctx, ch, px, py, size, scale) {
 }
 
 /* 맵 전체 */
-function drawMap(ctx, tileSize, scale) {
+function drawMap(ctx, tileSize, scale, purityAt) {
+  // purityAt(x, y) 가 없으면 마을 정화 여부를 보고 통째로 정한다.
+  // 엔딩에서는 빛이 한복판에서부터 퍼지도록 칸마다 다른 값을 넘긴다.
+  const whole = purityAt ? null : villageIsPure() ? 1 : 0;
   for (let y = 0; y < MAP_H; y++) {
     for (let x = 0; x < MAP_W; x++) {
-      drawTile(ctx, tileAt(x, y), x * tileSize * scale, y * tileSize * scale, tileSize, scale);
+      const t = purityAt ? purityAt(x, y) : whole;
+      drawTile(ctx, tileAt(x, y), x * tileSize * scale, y * tileSize * scale, tileSize, scale, t);
     }
   }
 }
