@@ -77,7 +77,7 @@ function renderReviewIntro() {
 
   box.innerHTML =
     '<p class="msg-title">틀렸던 문제 <b>' + review.queue.length + "개</b>가 기다려요</p>" +
-    '<p class="msg-body">다시 맞히면 기록에서 지워지고 가치볼을 받아요.<br>' +
+    '<p class="msg-body">다시 맞히면 기록에서 지워지고, 두 문제를 지울 때마다 가치볼을 받아요.<br>' +
     "여기서는 틀려도 신뢰도가 줄지 않으니 마음 편히 도전해요.</p>";
 
   const go = document.createElement("button");
@@ -255,9 +255,9 @@ function renderReviewDone() {
     '<p class="msg-body">' +
     review.queue.length + "문제 중 <b>" + review.right + "문제</b>를 맞혔어요.<br>" +
     "기록에서 <b>" + review.cleared.length + "문제</b>를 지웠어요." +
-    (reward ? "<br><br>보상 — <b>" + reward + "</b>" : "") +
+    (reward ? "<br><br>보상: <b>" + reward + "</b>" : "") +
     (newBadges.length
-      ? "<br><br>🏅 증표 획득 — <b>" +
+      ? "<br><br>🏅 증표 획득: <b>" +
         newBadges.map(function (b) { return b.name; }).join(", ") + "</b>"
       : "") +
     (wrongCount() > 0

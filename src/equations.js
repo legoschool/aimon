@@ -131,6 +131,14 @@ const STAGE_BALANCE = {
     minAskedToCatch: 4, // 최소 3문제 → 4문제
     whyChance: 0.6, // "왜 그럴까?" 가 훨씬 자주 나온다
   },
+  /* 황무지는 도시와 같은 문턱을 쓴다.
+     몬스터 장악력이 더 크고(130~180) 질문이 여섯이라 이미 충분히 어렵다.
+     마지막 보스는 볼을 쓰지 않으므로 이 값과 상관없다 (data/stage3/finale.js). */
+  3: {
+    catchMinAccuracy: 0.7,
+    minAskedToCatch: 4,
+    whyChance: 0.6,
+  },
 };
 
 /* 화면에 띄울 때 쓰는 퍼센트 */

@@ -78,9 +78,9 @@ function mixHex(a, b, t) {
    단색이면 심심하므로 칸마다 점무늬를 조금 얹는다.
    숲 타일은 점이 속성색이라, 어느 숲인지 색으로 구분된다.
    ----------------------------------------------------------- */
-function drawTile(ctx, ch, px, py, size, scale, purity) {
-  const dark = tileStyles()[ch] || tileStyles()["."];
-  const pure = pureTileStyles()[ch] || dark;
+function drawTile(ctx, ch, px, py, size, scale, purity, stageN) {
+  const dark = tileStyles(stageN)[ch] || tileStyles(stageN)["."];
+  const pure = pureTileStyles(stageN)[ch] || dark;
   const t = purity || 0;
   const s = size * scale;
   ctx.fillStyle = mixHex(dark.base, pure.base, t);
@@ -142,6 +142,51 @@ function drawTile(ctx, ch, px, py, size, scale, purity) {
       ctx.fillRect(px + 12 * scale, py + 6 * scale, p, 5 * scale);
       break;
 
+    /* --- 잿빛 황무지 --- */
+    case "ruin": // 무너진 벽 — 윗면이 들쭉날쭉한 덩어리
+      ctx.fillRect(px + 2 * scale, py + 7 * scale, 12 * scale, 9 * scale);
+      ctx.fillRect(px + 2 * scale, py + 3 * scale, 3 * scale, 4 * scale);
+      ctx.fillRect(px + 8 * scale, py + 5 * scale, 4 * scale, 2 * scale);
+      ctx.fillStyle = mixHex(dark.base, pure.base, t);
+      ctx.fillRect(px + 6 * scale, py + 10 * scale, p, 4 * scale);
+      break;
+
+    case "crack": // 갈라진 땅 — 지그재그 금
+      ctx.fillRect(px + 3 * scale, py + 4 * scale, p, 2 * scale);
+      ctx.fillRect(px + 4 * scale, py + 6 * scale, p, 2 * scale);
+      ctx.fillRect(px + 5 * scale, py + 8 * scale, 2 * scale, p);
+      ctx.fillRect(px + 11 * scale, py + 11 * scale, p, 2 * scale);
+      ctx.fillRect(px + 12 * scale, py + 13 * scale, 2 * scale, p);
+      break;
+
+    case "dry": // 마른 저수지 — 갈라진 진흙 (정화되면 물결로 읽힌다)
+      ctx.fillRect(px + 2 * scale, py + 8 * scale, 5 * scale, p);
+      ctx.fillRect(px + 7 * scale, py + 5 * scale, p, 4 * scale);
+      ctx.fillRect(px + 8 * scale, py + 11 * scale, 6 * scale, p);
+      break;
+
+    case "eye": // 감시탑 구역 — 기둥 위의 작은 카메라
+      ctx.fillRect(px + 4 * scale, py + 3 * scale, 8 * scale, 4 * scale);
+      ctx.fillRect(px + 7 * scale, py + 7 * scale, 2 * scale, 7 * scale);
+      ctx.fillRect(px + 5 * scale, py + 13 * scale, 6 * scale, p);
+      ctx.fillStyle = mixHex(dark.base, pure.base, t);
+      ctx.fillRect(px + 9 * scale, py + 4 * scale, 2 * scale, 2 * scale);
+      break;
+
+    case "fog": // 의심 안개 늪 — 흩어진 안개 줄기
+      ctx.fillRect(px + 2 * scale, py + 4 * scale, 6 * scale, p);
+      ctx.fillRect(px + 9 * scale, py + 3 * scale, 4 * scale, p);
+      ctx.fillRect(px + 7 * scale, py + 8 * scale, 7 * scale, p);
+      ctx.fillRect(px + 3 * scale, py + 12 * scale, 5 * scale, p);
+      break;
+
+    case "gap": // 끊어진 역 — 이가 빠진 보도블록
+      ctx.fillRect(px + 2 * scale, py + 2 * scale, 5 * scale, 5 * scale);
+      ctx.fillRect(px + 9 * scale, py + 9 * scale, 5 * scale, 5 * scale);
+      ctx.fillRect(px + 10 * scale, py + 3 * scale, 3 * scale, 2 * scale);
+      ctx.fillRect(px + 3 * scale, py + 10 * scale, 2 * scale, 3 * scale);
+      break;
+
     case "road": // 길 — 자갈 몇 알
       ctx.fillRect(px + 3 * scale, py + 5 * scale, p, p);
       ctx.fillRect(px + 11 * scale, py + 3 * scale, p, p);
@@ -154,15 +199,16 @@ function drawTile(ctx, ch, px, py, size, scale, purity) {
   }
 }
 
-/* 맵 전체 */
-function drawMap(ctx, tileSize, scale, purityAt) {
-  // purityAt(x, y) 가 없으면 마을 정화 여부를 보고 통째로 정한다.
-  // 엔딩에서는 빛이 한복판에서부터 퍼지도록 칸마다 다른 값을 넘긴다.
+/* 맵 전체
+   purityAt(x, y) 가 없으면 마을 정화 여부를 보고 통째로 정한다.
+   엔딩에서는 빛이 한복판에서부터 퍼지도록 칸마다 다른 값을 넘긴다.
+   stageN 을 주면 그 스테이지 지도를 그린다 (대문의 작은 지도). 없으면 지금 있는 곳. */
+function drawMap(ctx, tileSize, scale, purityAt, stageN) {
   const whole = purityAt ? null : villageIsPure() ? 1 : 0;
   for (let y = 0; y < MAP_H; y++) {
     for (let x = 0; x < MAP_W; x++) {
       const t = purityAt ? purityAt(x, y) : whole;
-      drawTile(ctx, tileAt(x, y), x * tileSize * scale, y * tileSize * scale, tileSize, scale, t);
+      drawTile(ctx, tileAt(x, y, stageN), x * tileSize * scale, y * tileSize * scale, tileSize, scale, t, stageN);
     }
   }
 }

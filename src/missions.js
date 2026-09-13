@@ -15,11 +15,16 @@ function missionsCleared() {
   }).length;
 }
 
-/* 새로 달성한 의뢰를 찾아 보상을 주고, 그 목록을 돌려준다 */
+/* 새로 달성한 의뢰를 찾아 보상을 주고, 그 목록을 돌려준다.
+   지나온 스테이지의 의뢰도 함께 본다. "다섯 번째 질문으로 5문제 맞히기"처럼
+   다음 스테이지에서 채워지는 의뢰가 5 / 5 인 채로 끝나지 않는 일을 막는다. */
 function checkMissions() {
   const justDone = [];
+  const here = currentStage();
 
-  missionsOfStage().forEach(function (m) {
+  MISSIONS.filter(function (m) {
+    return (m.stage || 1) <= here;
+  }).forEach(function (m) {
     if (missionDone(m.id)) return;
     if (!m.goal(save)) return;
 
@@ -50,8 +55,8 @@ function renderMissions(container) {
   const head = document.createElement("p");
   head.className = "sheet-note";
   head.innerHTML =
-    "박사님이 부탁한 일이에요. 달성하면 <b>가치볼</b>을 받아요. " +
-    "<b>" + missionsCleared() + " / " + MISSIONS.length + "</b> 완료";
+    "박사님이 " + escapeHtml(stageName()) + "에서 부탁한 일이에요. 달성하면 <b>가치볼</b>을 받아요. " +
+    "<b>" + missionsCleared() + " / " + missionsOfStage().length + "</b> 완료";
   container.appendChild(head);
 
   missionsOfStage().forEach(function (m, i) {

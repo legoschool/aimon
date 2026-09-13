@@ -63,7 +63,7 @@ function lockUntilRead(container, targets, ms, text, trackInstant) {
     if (left <= 0) {
       clearLock();
       bar.classList.add("done");
-      label.textContent = "이제 고를 수 있어요";
+      label.textContent = "이제 누를 수 있어요";
       if (trackInstant) lastUnlockAt = Date.now();
       targets.forEach(function (b) {
         b.disabled = false;

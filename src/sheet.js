@@ -33,11 +33,12 @@ function buildRecord() {
     klass: asText(save.klass),
     number: asText(save.number),
     nick: asText(save.nick || save.name),
+    stage: currentStage(), // 지금 있는 스테이지 (창구 v4 부터 시트에 남는다)
     caught: dexCaughtCount(),
     badges: typeof badgeCount === "function" ? badgeCount() : 0,
     asked: all.asked,
     right: all.right,
-    stats: save.stats,
+    stats: save.stats, // 주제마다 { right, asked } — 세 스테이지 아홉 주제
     hints: (save.hintIds || []).length,
     wrongs: (save.wrongIds || []).length,
     battles: save.battles || 0,
@@ -71,7 +72,7 @@ function sendRecord(force) {
    ----------------------------------------------------------- */
 function fetchClassRecords(password) {
   if (!sheetReady()) {
-    return Promise.reject(new Error("시트 주소가 설정되지 않았어요. data/config.js 를 보세요."));
+    return Promise.reject(new Error("시트 주소가 설정되지 않았어요. data/config.js를 보세요."));
   }
   const url =
     SHEET_ENDPOINT +

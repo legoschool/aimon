@@ -103,7 +103,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
 /* 반·번호 칸 */
 .id-row { display: flex; gap: 10px; margin-bottom: 10px; }
 .id-row label {
-  flex: 1; display: flex; align-items: center; gap: 8px; font-weight: 700;
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-weight: 700;
+  white-space: nowrap;
 }
 .id-row input {
   flex: 1; min-width: 0; font: inherit; padding: 10px;
@@ -719,7 +720,9 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
   /* 소리 버튼 막대가 흐름 안으로 내려온다.
      body 가 가로 flex 라서, 줄바꿈을 허용하지 않으면
      막대가 본문 옆에 나란히 서서 폭을 146px 나 빼앗는다. */
-  body { padding: 10px; flex-wrap: wrap; }
+  /* 두 줄로 나뉜 뒤 화면이 짧으면 남는 높이가 줄마다 나눠져 소리 버튼이 길쭉해진다.
+     줄을 위로 붙여 남는 높이를 아래로 보낸다. */
+  body { padding: 10px; flex-wrap: wrap; align-content: flex-start; }
   .battle-top {
     grid-template-columns: 1fr;
     grid-template-areas: "canvas" "mon" "me";
@@ -838,6 +841,165 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
   margin: 0 0 14px; padding: 9px 12px; text-align: center;
   background: #eaf3ea; border: 3px solid var(--good);
   font-weight: 800; font-size: .95rem;
+}
+
+/* ===========================================================
+   대문 — 게임 소개와 세 스테이지
+   =========================================================== */
+.screen.wide { max-width: 1060px; }
+.title-wrap {
+  display: grid; grid-template-columns: minmax(300px, 400px) 1fr;
+  gap: 22px; align-items: start;
+}
+.title-wrap .title-box { margin-top: 12px; }
+.title-parade {
+  width: 100%; height: auto; margin: 0 0 14px;
+  border: 3px solid var(--line); background: #efeadb;
+}
+.title-info { display: grid; gap: 16px; margin-top: 12px; }
+.info-card {
+  background: var(--panel); border: 4px solid var(--line);
+  box-shadow: var(--shadow); padding: 16px 18px;
+}
+.info-card h2 { margin: 0 0 10px; font-size: 1.15rem; }
+.info-lead { margin: 0 0 12px; font-size: .92rem; line-height: 1.7; }
+
+.how-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.how-step {
+  display: grid; grid-template-columns: 28px 52px 1fr; gap: 10px; align-items: center;
+  background: var(--paper); border: 3px solid var(--line); padding: 8px 10px;
+}
+.hs-no {
+  width: 26px; height: 26px; display: grid; place-items: center;
+  background: var(--ink); color: var(--panel); font-weight: 800; font-size: .85rem;
+}
+.how-step img { width: 48px; height: 48px; }
+.hs-icon { font-size: 1.6rem; text-align: center; line-height: 1; }
+.hs-text { font-size: .86rem; line-height: 1.5; }
+.hs-text b { display: block; font-size: .95rem; }
+
+.stage-cards { display: grid; gap: 10px; }
+.stage-card {
+  display: grid; grid-template-columns: 168px 1fr; gap: 12px;
+  background: var(--paper); border: 3px solid var(--line); padding: 10px;
+}
+.sc-map { position: relative; line-height: 0; border: 3px solid var(--line); align-self: start; }
+.sc-map canvas { width: 100%; height: auto; }
+.sc-no {
+  position: absolute; left: 0; top: 0; line-height: 1.4;
+  background: var(--ink); color: var(--panel); font-size: .7rem; font-weight: 800; padding: 1px 6px;
+}
+.sc-name { margin: 0; font-size: 1.05rem; }
+.sc-theme { margin: 0 0 6px; font-size: .82rem; color: var(--ink-soft); }
+.sc-theme b { color: var(--ink); }
+.sc-topics { margin: 0 0 6px; }
+.sc-chip {
+  display: inline-block; color: #fff; font-size: .72rem; font-weight: 800;
+  padding: 1px 7px; margin: 0 4px 3px 0;
+}
+.sc-mons { display: flex; flex-wrap: wrap; gap: 2px; align-items: flex-end; }
+.sc-mons img { width: 32px; height: 32px; }
+.sc-mons img.sc-boss { width: 36px; height: 36px; opacity: .85; }
+.sc-note { margin: 4px 0 0; font-size: .76rem; font-weight: 700; color: var(--ink-soft); }
+
+.tool-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tool-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--paper); border: 2px solid var(--line);
+  padding: 3px 9px; font-size: .82rem; font-weight: 700;
+}
+.tool-chip.later { border-style: dashed; }
+.tool-chip small { font-size: .68rem; color: var(--ink-soft); font-weight: 700; }
+.tc-icon { font-size: 1rem; }
+
+/* 도감·증표를 스테이지로 묶는 제목 */
+.dex-sec, .badge-sec {
+  grid-column: 1 / -1; margin: 12px 0 0; font-size: 1rem;
+  border-bottom: 3px solid var(--line); padding-bottom: 4px;
+}
+.badge-sec { margin: 18px 0 10px; }
+.dex-sec:first-child { margin-top: 0; }
+
+/* 황무지 구역 이름표 */
+.tut-chip.e { background: #3a9a4a; }
+.tut-chip.f { background: #4a54c8; }
+.tut-chip.g { background: #8a9a1e; }
+
+/* ===========================================================
+   마지막 싸움 — 가치몬과 함께
+   =========================================================== */
+.boss-line {
+  position: relative; margin: 0 0 12px; padding: 12px 14px;
+  background: #3b3833; color: #f4f0e2; border: 3px solid var(--line);
+}
+.bl-who {
+  display: inline-block; font-size: .72rem; font-weight: 800;
+  background: #c9a227; color: #23211c; padding: 1px 8px; margin-bottom: 4px;
+}
+.bl-text { margin: 0; font-size: 1.02rem; font-weight: 800; line-height: 1.55; }
+
+.party-group { margin: 10px 0 6px; font-size: .78rem; font-weight: 800; color: var(--ink-soft); }
+.party-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px;
+}
+.party-btn {
+  font: inherit; cursor: pointer; text-align: center;
+  background: #fff; border: 3px solid var(--line); box-shadow: 2px 2px 0 var(--line);
+  padding: 6px 4px; display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.party-btn:hover:not(:disabled) { background: #fffdf3; }
+.party-btn:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: none; }
+.party-btn img { width: 32px; height: 32px; }
+.pb-name { font-size: .72rem; font-weight: 800; line-height: 1.3; }
+.pb-rest { font-size: .64rem; color: var(--ink-soft); font-weight: 700; }
+.party-btn.resting { opacity: .45; cursor: not-allowed; background: #e6e1d0; }
+
+.partner-card {
+  display: flex; gap: 14px; align-items: flex-start;
+  background: var(--paper); border: 3px solid var(--line); padding: 12px;
+}
+.partner-card img { width: 64px; height: 64px; flex: 0 0 64px; }
+.pc-text b { font-size: 1.1rem; }
+.pc-from { display: block; font-size: .74rem; color: var(--ink-soft); font-weight: 700; }
+.pc-desc { margin: 6px 0 4px; font-weight: 800; font-size: .92rem; }
+.pc-lesson { margin: 0; font-size: .86rem; line-height: 1.6; }
+.partner-ask { margin: 12px 0 0; font-size: .9rem; line-height: 1.6; }
+.q-partner { width: 24px; height: 24px; }
+.q-situation.boss-quote { border-left-color: #c9a227; font-weight: 700; }
+.party-tip { border-left-color: #c9a227; }
+
+/* ===========================================================
+   여정 증서 — 마지막 스테이지 엔딩
+   =========================================================== */
+.journey-cert {
+  margin: 22px 0 0; padding: 18px;
+  background: #fffdf4; border: 4px double #c9a227; text-align: center;
+}
+.jc-title { margin: 0 0 6px; font-size: 1.3rem; letter-spacing: 1px; }
+.jc-who { margin: 0 0 12px; font-size: .95rem; line-height: 1.7; }
+.jc-row {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 4px; margin: 0 0 6px;
+}
+.jc-stage { flex: 0 0 100%; font-size: .74rem; font-weight: 800; color: var(--ink-soft); }
+.jc-row img { width: 36px; height: 36px; }
+.jc-facts { margin: 10px 0 0; font-size: .8rem; font-weight: 700; color: var(--ink-soft); }
+
+/* 넓은 표는 그 칸 안에서만 옆으로 밀린다 */
+.table-scroll { overflow-x: auto; }
+
+/* 칸이 글자 입력칸의 기본 폭(20글자)만큼 버티면 375px 화면에서 대문이 옆으로 밀린다.
+   칸과 그 안의 상자가 내용보다 좁아질 수 있게 둔다. */
+.title-wrap > * { min-width: 0; }
+@media (max-width: 860px) {
+  .title-wrap { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 520px) {
+  .stage-card { grid-template-columns: 1fr; }
+  .sc-map { max-width: 220px; }
+  .how-step { grid-template-columns: 26px 44px 1fr; }
+  .how-step img { width: 40px; height: 40px; }
+  .partner-card { flex-direction: column; align-items: center; text-align: center; }
 }
 
 @media print {

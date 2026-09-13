@@ -89,7 +89,7 @@ function tutorialIntro(onDone) {
         title: "무엇을 하면 되나요?",
         text:
           "그림자몬은 힘으로 이기는 게 아니에요.<br>" +
-          "<b>상황 문제를 풀어</b> 정체를 밝혀야 힘이 빠집니다.<br><br>" +
+          "<b>상황 문제를 풀어</b> 정체를 밝혀야 <b>장악력</b>(그림자몬이 사람을 붙잡고 있는 힘)이 줄어듭니다.<br><br>" +
           "충분히 약해지면 <b>가치볼</b>로 붙잡아 정화해 주세요.",
       },
       {
@@ -99,7 +99,7 @@ function tutorialIntro(onDone) {
           "<span class='tut-chip c'>파랑 저작권</span> " +
           "<span class='tut-chip p'>주황 개인정보</span> " +
           "<span class='tut-chip d'>보라 허위정보</span><br><br>" +
-          "그 풀숲 위를 걸어 다니면 그림자몬이 나타나요.",
+          "그 풀숲 위에 서 있는 그림자몬에게 다가가면 싸움이 시작돼요.",
         done: "가볼게요!",
       },
     ],
@@ -139,12 +139,12 @@ function tutorialBattle(monster, onDone) {
           "<b>답을 알려주는 게 아니라, 무엇을 살펴볼지 정하는 거예요.</b>",
       },
       {
-        title: "도구마다 잘 통하는 상대가 달라요",
+        title: "질문마다 잘 통하는 상대가 달라요",
         text:
-          "이 몬스터는 <b>" + typeName + "</b> 속성이에요.<br><br>" +
-          "<b>" + TOOLS[strong].icon + " " + TOOLS[strong].name + "</b> 으로 맞히면 " +
-          "<span class='tut-good'>효과가 굉장</span>해서 1.5배로 약해지고,<br>" +
-          "<b>" + TOOLS[weak].icon + " " + TOOLS[weak].name + "</b> 은 " +
+          "이 몬스터는 <b>" + typeName + "</b> 주제의 그림자몬이에요.<br><br>" +
+          "<b>" + TOOLS[strong].icon + " " + TOOLS[strong].name + "</b> 질문으로 맞히면 " +
+          "<span class='tut-good'>효과가 굉장</span>해서 평소의 1.5배만큼 장악력이 깎이고,<br>" +
+          "<b>" + TOOLS[weak].icon + " " + TOOLS[weak].name + "</b> 질문은 " +
           "<span class='tut-bad'>효과가 별로</span>예요.<br><br>" +
           "버튼에 적혀 있으니 보고 고르면 돼요.",
       },
@@ -154,7 +154,7 @@ function tutorialBattle(monster, onDone) {
           "틀리면 내 <b>신뢰도</b>가 조금 깎이지만, <b>해설</b>이 나와요.<br>" +
           "그리고 <b>틀린 문제는 다시 나옵니다.</b><br><br>" +
           "해설을 읽었으니 그때 맞히면 돼요.<br>" +
-          "🧠 <b>나는 왜 이걸 하려 하지?</b> 는 틀려도 절반만 깎여요. " +
+          "🧠 <b>나는 왜 이걸 하려 하지?</b> 질문은 틀려도 신뢰도가 절반만 깎여요. " +
           "내 마음을 들여다보는 일은 틀려도 괜찮으니까요.",
         done: "해볼게요!",
       },
@@ -164,67 +164,77 @@ function tutorialBattle(monster, onDone) {
 }
 
 /* -----------------------------------------------------------
-   3) 처음으로 볼을 던질 수 있게 됐을 때
-   ----------------------------------------------------------- */
-/* -----------------------------------------------------------
-   데이터 도시에 처음 도착했을 때
+   새 스테이지에 처음 도착했을 때
 
-   여기서 시점이 뒤집힌다는 것을 분명히 말해 준다.
-   마을에서는 내가 하는 쪽이었고, 도시에서는 당하는 쪽이다.
+   여기서 아이의 자리가 바뀐다는 것을 분명히 말해 준다.
+   마을에서는 하는 쪽, 도시에서는 당하는 쪽, 황무지에서는 함께 바꾸는 쪽이다.
+   안내 글은 스테이지 파일(data/stageN/stage.js)의 arrival 에 있다.
+     {name} → 탐험가 별명   {acc} → 잡는 정답률   {min} → 잡기 전 최소 문제 수
    ----------------------------------------------------------- */
-function tutorialCity(onDone) {
-  if (save.tutorial.city) {
+function tutorialArrival(stage, onDone) {
+  const def = stageData(stage);
+  const key = def.tutorialKey || "arrive" + stage;
+  if (!def.arrival || save.tutorial[key]) {
     if (onDone) onDone();
     return;
   }
-  save.tutorial.city = true;
+  save.tutorial[key] = true;
+  writeSave();
+
+  const fill = function (s) {
+    return String(s)
+      .replace(/\{name\}/g, escapeHtml(save.nick || save.name))
+      .replace(/\{acc\}/g, String(accPct()))
+      .replace(/\{min\}/g, String(bal("minAskedToCatch")));
+  };
+  tutorialOpen(
+    def.arrival.map(function (step) {
+      return { title: fill(step.title), text: fill(step.text), done: step.done };
+    }),
+    onDone
+  );
+}
+
+/* -----------------------------------------------------------
+   마지막 싸움 — 가치몬과 함께 싸우는 법 (처음 한 번)
+   ----------------------------------------------------------- */
+function tutorialParty(onDone) {
+  if (save.tutorial.party) {
+    if (onDone) onDone();
+    return;
+  }
+  save.tutorial.party = true;
   writeSave();
 
   tutorialOpen(
     [
       {
-        title: "데이터 도시에 도착했어요",
+        title: "마지막 싸움은 달라요",
         text:
-          "AI 마을을 깨끗하게 만들어 줘서 고마워요, <b>" +
-          escapeHtml(save.nick || save.name) + "</b> 탐험가.<br><br>" +
-          "그런데 이 도시의 그림자는 <b>마을과 다릅니다.</b>",
+          "어차피몬에게는 볼을 던지지 않아요.<br>" +
+          "세 곳을 지나며 모은 <b>가치몬들이 함께 싸웁니다.</b>",
       },
       {
-        title: "이번엔 내가 당하는 쪽이에요",
+        title: "한 차례는 이렇게 흘러가요",
         text:
-          "마을의 그림자는 <b>내가 남에게 하는 잘못</b>이었어요.<br>" +
-          "베끼고, 함부로 올리고, 안 알아보고 퍼뜨리는 것들이었죠.<br><br>" +
-          "도시의 그림자는 달라요. <b>내가 아무것도 안 해도</b> " +
-          "나에게 조용히 일어나는 일들입니다.",
+          "① 어차피몬이 <b>\"어차피 ~\"</b> 하고 말을 걸어요.<br>" +
+          "② 그 말에 맞설 <b>가치몬 하나</b>를 골라요.<br>" +
+          "③ 그 가치몬과 함께 할 <b>대답</b>을 골라요.<br><br>" +
+          "대답을 맞히면 가치몬이 공격해요.",
       },
       {
-        title: "세 구역이 있어요",
+        title: "딱 맞는 가치몬을 찾아요",
         text:
-          "<span class='tut-chip x'>추천의 거리 · 편향</span> " +
-          "AI가 누구를 빼놓는지<br>" +
-          "<span class='tut-chip y'>자동응답 구역 · 의존</span> " +
-          "판단을 AI에게 넘기지 않는지<br>" +
-          "<span class='tut-chip z'>알림 광장 · 조작</span> " +
-          "나를 붙잡아 두려는 설계인지",
+          "그 말에 딱 맞는 가치몬이면 <span class='tut-good'>효과가 굉장</span>하고, " +
+          "빗나가면 <span class='tut-bad'>효과가 별로</span>예요.<br><br>" +
+          "가치몬을 누르면 무엇을 지키는 가치몬인지 설명이 나와요. 읽고 골라요.",
       },
       {
-        title: "다섯 번째 질문이 열렸어요",
+        title: "한 번 싸운 가치몬은 쉬어요",
         text:
-          "🎯 <b>이건 누구를 위한 걸까?</b><br><br>" +
-          "네 가지 질문으로는 안 풀리는 것이 있어요.<br>" +
-          "추천 화면, 자동 재생, 끝없는 알림 같은 것들이요.<br><br>" +
-          "<b>누가 다칠까?</b> 는 내 행동의 피해자를 묻고,<br>" +
-          "<b>나는 왜 이걸 하려 하지?</b> 는 내 마음을 묻지만,<br>" +
-          "여기서 따져야 할 건 <b>만든 사람의 속셈</b>이에요.",
-      },
-      {
-        title: "여기는 더 어려워요",
-        text:
-          "속성이 <b>둘</b>인 몬스터가 있어요. 상성이 반쪽만 맞습니다.<br>" +
-          "잡으려면 정답률 <b>" + accPct() + "% 이상</b>, " +
-          "문제 <b>" + bal("minAskedToCatch") + "개 이상</b>이 필요해요.<br><br>" +
-          "천천히 읽으세요. 여기서는 <b>급하게 고르는 것</b>이 제일 위험합니다.",
-        done: "가볼게요!",
+          "그래서 한 가지 가치로는 못 이겨요. <b>여러 가치몬과 돌아가며</b> 맞서요.<br><br>" +
+          "장악력이 0이 되면 모든 가치몬이 모여 <b>함께 정화</b>합니다.",
+        done: "함께 싸울게요!",
       },
     ],
     onDone

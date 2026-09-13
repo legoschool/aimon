@@ -78,14 +78,18 @@ function blankSave(name) {
     battles: 0,
     startedAt: null,
     lastPlayed: null,
-    tutorial: { intro: false, battle: false, catchTip: false, city: false },
+    // 안내를 봤는지. 도착 안내 이름(city · waste)은 data/stageN/stage.js 의 tutorialKey
+    tutorial: { intro: false, battle: false, catchTip: false, city: false, waste: false, party: false },
     missionsDone: [], // 달성한 박사님 의뢰 id
     badges: [], // 얻은 증표 id — 사라지지 않고 기록·인쇄에 남는다
     reviewCleared: 0, // 복습으로 지운 문항 수 (누적)
     perfectCatch: false, // 한 문제도 안 틀리고 정화한 적이 있는가
     endingSeen: false, // 1스테이지 엔딩을 본 적이 있는가
-    stage: 1, // 지금 있는 마을 (1 = AI 마을, 2 = 데이터 도시)
+    stage: 1, // 지금 있는 스테이지 (1 AI 마을, 2 데이터 도시, 3 잿빛 황무지)
     stagesSeen: [], // 엔딩을 본 스테이지 번호들
+    // 마지막 싸움(src/finale.js)의 가장 좋은 기록. 여기 없으면 applySave 가 다시 불러올 때 버린다.
+    partyBest: 0, // 함께 싸운 가치몬 수
+    partyBestHits: 0, // 딱 맞는 가치몬을 찾아낸 횟수 (짝꿍 증표)
   };
 }
 
@@ -161,6 +165,7 @@ function listStudents() {
         number: s.number || "",
         label: displayName(s),
         caught: (s.caught || []).length,
+        stage: s.stage || 1,
         right: right,
         asked: asked,
         rate: asked > 0 ? right / asked : 0,
@@ -226,9 +231,10 @@ function villageIsPure() {
   return stageCleared(currentStage());
 }
 
-/* 다음 마을이 열렸는가 — 1스테이지를 끝내야 데이터 도시로 갈 수 있다 */
+/* 다음 스테이지로 떠날 수 있는가 — 지금 있는 곳의 마지막 보스를 정화했고, 다음이 있을 때 */
 function nextStageOpen() {
-  return stageCleared(1) && currentStage() === 1;
+  const st = currentStage();
+  return stageCleared(st) && st < lastStage();
 }
 
 /* 이 학생이 가 볼 수 있는 가장 먼 스테이지.
@@ -236,7 +242,7 @@ function nextStageOpen() {
    기록 화면은 여기까지의 주제와 질문만 보여 준다 (아직 안 열린 것은 보여 주지 않는다). */
 function reachedStage() {
   let n = 1;
-  while (n < LAST_STAGE && stageCleared(n)) n++;
+  while (n < lastStage() && stageCleared(n)) n++;
   return Math.max(n, currentStage());
 }
 
@@ -267,6 +273,15 @@ function recordAnswer(question, toolId, isCorrect) {
   if (!isCorrect && save.wrongIds.indexOf(question.id) === -1) {
     save.wrongIds.push(question.id);
   }
+  writeSave();
+}
+
+/* 문항이 아닌 대답(마지막 싸움의 말)을 주제 칸에만 기록한다.
+   틀린 문제 목록(wrongIds)은 문항표에 있는 문제만 담으므로 여기서는 건드리지 않는다. */
+function recordTopicAnswer(typeId, isCorrect) {
+  const s = tallyOf(save.stats, typeId);
+  s.asked++;
+  if (isCorrect) s.right++;
   writeSave();
 }
 
@@ -310,7 +325,20 @@ function overallAccuracy() {
 function renderDex(container) {
   container.innerHTML = "";
 
+  let lastStageShown = 0;
   MONSTERS.forEach(function (m) {
+    // 스테이지가 바뀌는 자리에 제목을 끼운다 (아직 못 간 곳은 이름만 보인다)
+    const st = stageOf(m);
+    if (st !== lastStageShown) {
+      lastStageShown = st;
+      const sec = document.createElement("h3");
+      sec.className = "dex-sec";
+      sec.textContent =
+        stageName(st) + "  " + stageCaughtCount(st) + " / " + monstersOfStage(st).length +
+        (st > reachedStage() ? "  (앞 스테이지를 정화하면 열려요)" : "");
+      container.appendChild(sec);
+    }
+
     const got = isCaught(m.id);
     const card = document.createElement("div");
     card.className = "dex-card" + (got ? " caught" : " unknown");
@@ -320,7 +348,7 @@ function renderDex(container) {
 
     const img = document.createElement("img");
     img.className = "dex-sprite";
-    img.alt = got ? m.purified.name : "아직 만나지 않은 AI몬스터";
+    img.alt = got ? m.purified.name : "아직 정화하지 않은 AI몬스터";
     img.src = got
       ? spriteToDataURL(grid, pal, 4)
       : spriteToDataURL(m.sprite, shadowPalette(), 4);
@@ -338,7 +366,9 @@ function renderDex(container) {
 
     const from = document.createElement("div");
     from.className = "dex-from";
-    from.textContent = got ? m.name + " 에서 정화" : TYPES[m.type].name;
+    from.textContent = got
+      ? m.name + "에서 정화"
+      : m.finalBoss ? "마지막 관문" : TYPES[m.type].name + (m.type2 ? " · " + TYPES[m.type2].name : "");
     card.appendChild(from);
 
     if (got) {

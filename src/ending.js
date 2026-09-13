@@ -1,24 +1,27 @@
 /* ===========================================================
-   AI몬스터 — 엔딩 (AI 마을 정화)
+   AI몬스터 — 엔딩 (스테이지 정화)
 
-   마지막 보스까지 정화하면 여기로 온다.
+   스테이지의 마지막 보스까지 정화하면 여기로 온다.
 
    예전에는 작은 알림 한 줄이 스쳐 지나가고 기록 화면이 열렸다.
    그래서 아이들이 게임이 끝났는지도 몰랐다.
 
    끝은 분명해야 한다. 그래서 세 가지를 한다.
-     1) 지도가 눈앞에서 밝아진다 — "정화"를 글이 아니라 색으로 본다
-     2) 가치몬 일곱이 자기 숲으로 돌아와 선다
+     1) 지도가 눈앞에서 밝아진다 ("정화"를 글이 아니라 색으로 본다)
+     2) 가치몬 일곱이 자기 자리로 돌아와 선다
      3) 일곱 가지 배운 것을 한자리에 모아 다시 읽는다
 
    3번이 이 게임의 진짜 결말이다.
    몬스터를 다 잡은 것이 아니라, 물어보는 법을 배운 것이 끝이다.
+
+   자막과 마지막 말은 스테이지 파일(data/stageN/stage.js)의 ending 에 있다.
+   마지막 스테이지를 끝내면 세 곳의 여정을 한 장에 모은 "여정 증서"가 더 붙는다.
    =========================================================== */
 
 const END_TILE = 16;
 const END_SCALE = 2;
 
-/* 이 엔딩이 다루는 몬스터 — 지금 있는 마을의 것만 */
+/* 이 엔딩이 다루는 몬스터 — 지금 있는 스테이지의 것만 */
 function endMonsters() {
   return monstersOfStage(currentStage());
 }
@@ -35,11 +38,23 @@ const ending = {
 
 /* 연출 시간표 (초) */
 const END_T = {
-  dark: 1.2,     // 어둠이 남아 있는 동안
-  spread: 4.4,   // 빛이 다 퍼지는 시각
+  dark: 1.2, // 어둠이 남아 있는 동안
+  spread: 4.4, // 빛이 다 퍼지는 시각
   monsters: 7.6, // 가치몬이 다 모이는 시각
-  finish: 8.8,   // 글이 올라오는 시각
+  finish: 8.8, // 글이 올라오는 시각
 };
+
+/* 스테이지 파일에 적힌 자막. 비어 있으면 이름으로 만든다 */
+function endCaption(key) {
+  const def = stageData();
+  const last = finalBossMonster();
+  const texts = def.ending || {};
+  if (texts[key]) return texts[key];
+  if (key === "start") return last.name + josa(last.name, "이", "가") + " 빛으로 흩어졌습니다…";
+  if (key === "spread") return "어둠이 걷히고 있어요…";
+  if (key === "gather") return "가치몬들이 " + def.place + josa(def.place, "으로", "로") + " 돌아옵니다";
+  return stageName() + josa(stageName(), "이", "가") + " 깨끗해졌습니다";
+}
 
 /* -----------------------------------------------------------
    열기
@@ -49,6 +64,8 @@ function openEnding() {
   stopMapAnim();
 
   save.endingSeen = true;
+  if (!save.stagesSeen) save.stagesSeen = [];
+  if (save.stagesSeen.indexOf(currentStage()) === -1) save.stagesSeen.push(currentStage());
   writeSave();
 
   const canvas = document.getElementById("endCanvas");
@@ -74,7 +91,7 @@ function openEndingSummary() {
   ending.sparks = [];
   drawEndingFrame();
 
-  setCaption(stageName() + josa(stageName(), "이", "가") + " 깨끗해졌습니다");
+  setCaption(endCaption("done"));
   showEndingBody();
 }
 
@@ -90,7 +107,7 @@ function playEndingScene() {
   ending.shown = 0;
   ending.done = false;
 
-  setCaption("생각멈춤몬이 빛으로 흩어졌습니다…");
+  setCaption(endCaption("start"));
   drawEndingFrame();
 
   // 프레임 수가 아니라 실제 흐른 시간을 본다.
@@ -108,7 +125,7 @@ function playEndingScene() {
     if (t >= END_T.dark && t < END_T.spread) {
       if (!saidSpread) {
         saidSpread = true;
-        setCaption("어둠이 걷히고 있어요…");
+        setCaption(endCaption("spread"));
         sfx("purify");
       }
       const p = (t - END_T.dark) / (END_T.spread - END_T.dark);
@@ -131,12 +148,12 @@ function playEndingScene() {
       }
     }
 
-    /* 2단계 — 가치몬이 하나씩 자기 숲으로 돌아온다 */
+    /* 2단계 — 가치몬이 하나씩 자기 자리로 돌아온다 */
     if (t >= END_T.spread) {
       ending.wave = 99;
       if (!saidGather) {
         saidGather = true;
-        setCaption("가치몬들이 마을로 돌아옵니다");
+        setCaption(endCaption("gather"));
       }
       const total = endMonsters().length;
       const p = (t - END_T.spread) / (END_T.monsters - END_T.spread);
@@ -150,7 +167,7 @@ function playEndingScene() {
     /* 3단계 — 마무리 */
     if (t >= END_T.finish && !ending.done) {
       ending.done = true;
-      setCaption(stageName() + josa(stageName(), "이", "가") + " 깨끗해졌습니다");
+      setCaption(endCaption("done"));
       sfx("purify");
       showEndingBody();
     }
@@ -184,7 +201,7 @@ function skipEnding() {
   ending.sparks = [];
   ending.done = true;
   drawEndingFrame();
-  setCaption(stageName() + josa(stageName(), "이", "가") + " 깨끗해졌습니다");
+  setCaption(endCaption("done"));
   showEndingBody();
 }
 
@@ -233,7 +250,7 @@ function drawEndingFrame() {
     ctx.globalAlpha = 1;
   }
 
-  // 주인공 — 생각지기 바로 아래에 서서 올려다본다
+  // 주인공 — 한복판(마지막 보스가 서 있던 자리) 바로 아래에 서서 올려다본다
   const sp = playerSprite("up", 0);
   drawSprite(
     ctx,
@@ -264,16 +281,20 @@ function showEndingBody() {
   box.classList.add("on");
 }
 
+const KOREAN_COUNT = ["", "한", "두", "세", "네", "다섯", "여섯", "일곱", "여덟", "아홉", "열"];
+
 function renderEndingBody(container) {
   container.innerHTML = "";
   const all = overallAccuracy();
+  const st = currentStage();
+  const def = stageData(st);
 
   /* ---- 머리말 ---- */
   const head = document.createElement("div");
   head.className = "end-head";
   head.innerHTML =
-    '<p class="end-badge">ALL CLEAR</p>' +
-    "<h2>" + escapeHtml(stageName()) + josa(stageName(), "이", "가") + " 깨끗해졌습니다</h2>" +
+    '<p class="end-badge">' + (st === lastStage() ? "ALL CLEAR" : "STAGE CLEAR") + "</p>" +
+    "<h2>" + escapeHtml(endCaption("done")) + "</h2>" +
     '<p class="end-who">' +
     escapeHtml(displayName() || "탐험가") +
     " · " +
@@ -292,10 +313,10 @@ function renderEndingBody(container) {
   tiles.appendChild(tile("얻은 증표", badgeCount() + " / " + BADGES.length));
   container.appendChild(tiles);
 
-  /* ---- 일곱 가지 배운 것 — 여기가 진짜 결말이다 ---- */
+  /* ---- 가치몬이 남긴 말 — 여기가 진짜 결말이다 ---- */
   const t1 = document.createElement("h3");
   t1.className = "end-sec";
-  t1.textContent = "일곱 가치몬이 남긴 말";
+  t1.textContent = (KOREAN_COUNT[mons.length] || mons.length) + " 가치몬이 남긴 말";
   container.appendChild(t1);
 
   const list = document.createElement("div");
@@ -313,7 +334,7 @@ function renderEndingBody(container) {
     txt.className = "el-text";
     txt.innerHTML =
       "<b>" + escapeHtml(m.purified.name) + "</b>" +
-      '<span class="el-from">' + escapeHtml(m.name) + " 에서 정화</span>" +
+      '<span class="el-from">' + escapeHtml(m.name) + "에서 정화</span>" +
       "<p>" + escapeHtml(m.purified.lesson) + "</p>";
     row.appendChild(txt);
 
@@ -322,17 +343,17 @@ function renderEndingBody(container) {
   container.appendChild(list);
 
   /* ---- 교실 밖으로 가지고 나갈 것 ---- */
-  const ids = toolsForStage(currentStage());
+  const ids = toolsForStage(st);
   const t2 = document.createElement("h3");
   t2.className = "end-sec";
-  t2.textContent = "교실 밖에서도 쓰는 " + ["", "한", "두", "세", "네", "다섯"][ids.length] + " 가지 질문";
+  t2.textContent = "교실 밖에서도 쓰는 " + (KOREAN_COUNT[ids.length] || ids.length) + " 가지 질문";
   container.appendChild(t2);
 
   const tools = document.createElement("div");
   tools.className = "end-tools";
   ids.forEach(function (id) {
     const s = tallyOrZero(save.toolStats, id);
-    const rate = s.asked > 0 ? Math.round((s.right / s.asked) * 100) + "%" : "—";
+    const rate = s.asked > 0 ? Math.round((s.right / s.asked) * 100) + "%" : "아직 안 씀";
     const c = document.createElement("div");
     c.className = "end-tool";
     c.innerHTML =
@@ -344,45 +365,30 @@ function renderEndingBody(container) {
   });
   container.appendChild(tools);
 
+  /* ---- 마지막 스테이지를 끝냈으면 세 곳의 여정을 한 장에 ---- */
+  if (st === lastStage()) {
+    container.appendChild(renderJourneyCertificate());
+  }
+
   /* ---- 마지막 말 ---- */
   const words = document.createElement("div");
   words.className = "end-words";
-  words.innerHTML =
-    currentStage() === 1
-      ? "<p>이 게임에서 이긴 방법은 답을 <b>빨리</b> 고르는 것이 아니었어요. " +
-        "상황을 끝까지 읽고, 누구의 것인지 묻고, 누가 다칠지 헤아리고, " +
-        "내가 왜 이걸 하려는지 들여다본 것이었어요.</p>" +
-        "<p>AI는 앞으로 더 똑똑해집니다. 그래서 더 귀해지는 건 " +
-        "<b>답을 아는 사람</b>이 아니라 <b>무엇이 옳은지 묻는 사람</b>이에요.</p>" +
-        "<p>생각멈춤몬은 완전히 사라지지 않아요. 바쁠 때, 귀찮을 때, " +
-        "남들이 다 그렇게 할 때 다시 찾아옵니다. " +
-        "그때 <b>한 번 더 생각하는 것</b> — 그게 오늘 여러분이 얻은 진짜 힘이에요.</p>"
-      : "<p>마을에서는 <b>내가 하는 일</b>을 살폈어요. " +
-        "베끼지 않기, 함부로 올리지 않기, 안 알아보고 퍼뜨리지 않기.</p>" +
-        "<p>도시에서는 <b>나에게 일어나는 일</b>을 살폈어요. " +
-        "누가 화면에서 빠졌는지, 판단을 누구에게 넘겼는지, " +
-        "이 알림이 누구를 위한 것인지.</p>" +
-        "<p>제일 중요한 걸 하나만 기억한다면 이거예요. " +
-        "영상을 한 시간 본 것도, 알림에 끌려다닌 것도 " +
-        "<b>여러분 마음이 약해서가 아닙니다.</b> " +
-        "그렇게 만들어져 있었어요. 그걸 알아채는 순간부터 " +
-        "여러분은 끌려다니는 쪽이 아니라 <b>고르는 쪽</b>이 됩니다.</p>" +
-        "<p>다들 그렇게 해도 나는 물어볼 수 있어요. " +
-        "무엇이 옳은지 정하는 건 사람이고, <b>그 사람은 나여야 합니다.</b></p>";
+  words.innerHTML = (def.ending && def.ending.words) || "";
   container.appendChild(words);
 
   /* ---- 버튼 ---- */
   const row = document.createElement("div");
   row.className = "end-btns no-print";
 
-  // 마을을 끝냈으면 다음 마을이 열린다. 가장 크게 보여야 할 버튼이다.
+  // 다음 스테이지가 열렸으면 가장 크게 보여야 할 버튼이다
   if (nextStageOpen()) {
+    const nextDef = stageData(st + 1);
     const bNext = document.createElement("button");
     bNext.className = "btn primary big";
-    bNext.textContent = "🏙  데이터 도시로 떠나기";
+    bNext.textContent = nextDef.enterLabel || nextDef.name + josa(nextDef.name, "으로", "로") + " 떠나기";
     bNext.onclick = function () {
       sfx("caught");
-      enterStage(2);
+      enterStage(st + 1);
     };
     row.appendChild(bNext);
   }
@@ -407,7 +413,7 @@ function renderEndingBody(container) {
 
   const bMap = document.createElement("button");
   bMap.className = "btn ghost";
-  bMap.textContent = "마을 둘러보기";
+  bMap.textContent = def.place + " 둘러보기";
   bMap.onclick = function () {
     sfx("button");
     stopEndingScene();
@@ -418,4 +424,62 @@ function renderEndingBody(container) {
   row.appendChild(bMap);
 
   container.appendChild(row);
+}
+
+/* -----------------------------------------------------------
+   여정 증서 — 세 곳을 모두 정화한 아이에게
+   모은 가치몬을 한 장에 늘어놓는다. 인쇄하면 그대로 증서가 된다.
+   ----------------------------------------------------------- */
+function renderJourneyCertificate() {
+  const box = document.createElement("section");
+  box.className = "journey-cert";
+
+  const caughtAll = MONSTERS.filter(function (m) { return isCaught(m.id); });
+  const all = overallAccuracy();
+
+  const title = document.createElement("h3");
+  title.className = "jc-title";
+  title.textContent = "AI몬스터 여정 증서";
+  box.appendChild(title);
+
+  const names = STAGES.slice(1).map(function (s) { return s.name; });
+  const who = document.createElement("p");
+  who.className = "jc-who";
+  who.innerHTML =
+    "<b>" + escapeHtml(displayName() || "탐험가") + "</b> 탐험가는 " +
+    escapeHtml(names.join(", ")) + josa(names[names.length - 1], "을", "를") +
+    " 모두 정화하고 가치몬 " + caughtAll.length + "마리를 되찾았습니다.";
+  box.appendChild(who);
+
+  for (let st = 1; st <= lastStage(); st++) {
+    const row = document.createElement("div");
+    row.className = "jc-row";
+    const label = document.createElement("span");
+    label.className = "jc-stage";
+    label.textContent = stageName(st);
+    row.appendChild(label);
+    monstersOfStage(st).forEach(function (m) {
+      const img = document.createElement("img");
+      img.alt = m.purified.name;
+      img.title = m.purified.name;
+      img.src = spriteToDataURL(
+        isCaught(m.id) ? m.purified.sprite : m.sprite,
+        isCaught(m.id) ? paletteFor(m.type) : shadowPalette(),
+        2
+      );
+      row.appendChild(img);
+    });
+    box.appendChild(row);
+  }
+
+  const facts = document.createElement("p");
+  facts.className = "jc-facts";
+  facts.textContent =
+    "전체 정답률 " + Math.round(all.rate * 100) + "% · 푼 문제 " + all.asked + "개 · 증표 " +
+    badgeCount() + "개" +
+    (save.partyBest ? " · 마지막 싸움에서 함께 싸운 가치몬 " + save.partyBest + "마리" : "") +
+    " · " + new Date().toLocaleDateString("ko-KR");
+  box.appendChild(facts);
+
+  return box;
 }

@@ -1,23 +1,34 @@
 /* ===========================================================
-   AI몬스터 — 판단 도구 & 상성표
+   AI몬스터 — 주제 · 판단 질문 · 상성표
+
+   세 스테이지가 함께 쓰는 표다. 스테이지를 더하면 여기에
+   주제(TYPES)와 질문(TOOLS)을 더하고, 상성표(TYPE_CHART)에 칸을 채운다.
    =========================================================== */
 
-/* 몬스터 속성
-   앞의 셋이 본편이고, all 은 마지막 보스 전용이다.
-   세 주제를 관통하는 뿌리 — "스스로 생각하기를 멈춘 것" — 이라
-   특정 주제에 묶이지 않는다. */
+/* -----------------------------------------------------------
+   주제 (몬스터 속성)
+
+   stage 가 없으면 1스테이지 주제다.
+   all 은 스테이지마다 있는 마지막 보스 전용이라 문제의 주제가 아니다.
+   ----------------------------------------------------------- */
 const TYPES = {
+  /* --- 1스테이지 · AI 마을 : 내가 남에게 끼치는 해 (아이가 하는 쪽) --- */
   copyright: { id: "copyright", name: "저작권",   accent: "#3a6ea5" }, // 파랑
   privacy:   { id: "privacy",   name: "개인정보", accent: "#c9642a" }, // 주황
   disinfo:   { id: "disinfo",   name: "허위정보", accent: "#6b4a9e" }, // 보라
-  all:       { id: "all",       name: "모든 주제", accent: "#c9a227" }, // 금색
 
-  /* --- 2스테이지 · 데이터 도시 ---
-     1스테이지가 "내가 남에게 끼치는 해"라면 여기는
-     "나에게 보이지 않게 일어나는 일"이다. 아이가 하는 쪽이 아니라 당하는 쪽이다. */
+  /* --- 2스테이지 · 데이터 도시 : 나에게 보이지 않게 일어나는 일 (아이가 당하는 쪽) --- */
   bias:    { id: "bias",    name: "편향", accent: "#c2407a", stage: 2 }, // 자홍
   depend:  { id: "depend",  name: "의존", accent: "#2f8f8f", stage: 2 }, // 청록
   manipul: { id: "manipul", name: "조작", accent: "#c0392b", stage: 2 }, // 붉은색
+
+  /* --- 3스테이지 · 잿빛 황무지 : 모두가 함께 만든 결과 (아이가 함께 바꾸는 쪽) --- */
+  surveil:  { id: "surveil",  name: "감시", accent: "#3a9a4a", stage: 3 }, // 초록
+  distrust: { id: "distrust", name: "불신", accent: "#4a54c8", stage: 3 }, // 남색
+  exclude:  { id: "exclude",  name: "소외", accent: "#8a9a1e", stage: 3 }, // 올리브
+
+  /* --- 마지막 보스 전용 --- */
+  all: { id: "all", name: "모든 주제", accent: "#c9a227" }, // 금색
 };
 
 /* 문제의 주제 id 전부 — "all" 은 마지막 보스 전용이라 주제가 아니다 */
@@ -35,7 +46,7 @@ function typesOfStage(stage) {
 }
 
 /* -----------------------------------------------------------
-   판단 도구 4종 = 포켓몬의 "기술 4개" 자리
+   판단 질문 = 포켓몬의 "기술" 자리
 
    이름을 답이 아니라 질문으로 둔다.
 
@@ -45,6 +56,9 @@ function typesOfStage(stage) {
 
    질문으로 바꾸면 무엇을 따져볼지만 정해지고 답은 알려주지 않는다.
    생각을 대신해 주지 않는 것이 이 게임이 하려는 일이다.
+
+   스테이지마다 하나씩 늘어난다. 마을 넷 → 도시 다섯 → 황무지 여섯.
+   stage 가 있으면 그 스테이지부터 보인다.
    ----------------------------------------------------------- */
 const TOOLS = {
   verify: {
@@ -70,19 +84,27 @@ const TOOLS = {
   },
 
   /* --- 데이터 도시에서 열린다 ---
-     앞의 넷으로는 안 풀리는 상황이 있다.
-     추천 화면, 자동 재생, 품절 알림, 붙잡는 챗봇.
+     추천 화면, 자동 재생, 품절 알림은 앞의 넷으로 안 풀린다.
      "누가 다칠까?"는 내 행동의 피해자를 묻는데 나는 아무것도 안 했고,
-     "나는 왜 이걸 하려 하지?"는 내 동기를 묻는데 따질 것은 만든 사람의 동기다.
-     그래서 다섯 번째가 필요하다. */
+     "나는 왜 이걸 하려 하지?"는 내 동기를 묻는데 따질 것은 만든 사람의 동기다. */
   purpose: {
     id: "purpose", name: "이건 누구를 위한 걸까?", icon: "🎯",
     desc: "이것이 누구에게 이롭게 만들어졌는지 따져본다.",
-    stage: 2, // 1스테이지에서는 보이지 않는다
+    stage: 2,
+  },
+
+  /* --- 잿빛 황무지에서 열린다 ---
+     황무지는 누구 한 사람이 망가뜨린 곳이 아니다.
+     "나 하나쯤이야"가 모두에게서 한꺼번에 일어난 곳이다.
+     그래서 마지막 질문은 나를 넘어 모두를 그려 보게 한다. */
+  everyone: {
+    id: "everyone", name: "모두가 그렇게 하면 어떻게 될까?", icon: "🌍",
+    desc: "나 하나만이 아니라 모두가 그렇게 할 때 어떤 세상이 될지 그려본다.",
+    stage: 3,
   },
 };
 
-/* 이 스테이지에서 쓸 수 있는 도구만 추린다 */
+/* 이 스테이지에서 쓸 수 있는 질문만 추린다 */
 function toolsForStage(stage) {
   return Object.keys(TOOLS).filter(function (id) {
     return !TOOLS[id].stage || TOOLS[id].stage <= stage;
@@ -90,78 +112,78 @@ function toolsForStage(stage) {
 }
 
 /* -----------------------------------------------------------
-   상성표 — TYPE_CHART[도구][몬스터속성] = 데미지 배율
+   상성표 — TYPE_CHART[질문][주제] = 데미지 배율
 
-   앞의 3개는 가위바위보 순환이라 아이들이 금방 익힌다.
-       "진짜일까?"      → 허위정보
-       "누구의 것일까?"  → 저작권
-       "누가 다칠까?"    → 개인정보
-   "나는 왜 이걸 하려 하지?" 는 전부 1.0. 대신 오답 피해가 절반이다.
+   주제마다 "효과 굉장"(1.5)인 질문이 하나, "효과 별로"(0.5)인 질문이 하나다.
+     마을   진짜일까?→허위정보   누구의 것일까?→저작권   누가 다칠까?→개인정보
+     도시   진짜일까?→의존       나는 왜?→조작            누구를 위한?→편향
+     황무지 누구를 위한?→감시    모두가 그렇게 하면?→불신  누가 다칠까?→소외
+   "나는 왜 이걸 하려 하지?" 는 마을에서 전부 1.0 이고 오답 피해가 절반이다.
+   "모두가 그렇게 하면?" 은 약한 상대가 없다. 대신 황무지에서만 쓸 수 있다.
    ----------------------------------------------------------- */
 const TYPE_CHART = {
-  /*            저작권  개인정보  허위정보  편향   의존   조작   전부 */
-  verify:    { copyright: 0.5, privacy: 1.0, disinfo: 1.5, bias: 1.0, depend: 1.5, manipul: 0.5, all: 1.0 },
-  respect:   { copyright: 1.5, privacy: 0.5, disinfo: 1.0, bias: 0.5, depend: 1.0, manipul: 1.0, all: 1.0 },
-  ownership: { copyright: 1.0, privacy: 1.5, disinfo: 0.5, bias: 1.0, depend: 0.5, manipul: 1.0, all: 1.0 },
-  critique:  { copyright: 1.0, privacy: 1.0, disinfo: 1.0, bias: 1.0, depend: 1.0, manipul: 1.5, all: 1.0 },
-  purpose:   { copyright: 1.0, privacy: 1.0, disinfo: 0.5, bias: 1.5, depend: 1.0, manipul: 1.0, all: 1.0 },
+  /*           저작권          개인정보       허위정보      편향       의존         조작          감시          불신           소외          전부 */
+  verify:    { copyright: 0.5, privacy: 1.0, disinfo: 1.5, bias: 1.0, depend: 1.5, manipul: 0.5, surveil: 0.5, distrust: 0.5, exclude: 1.0, all: 1.0 },
+  respect:   { copyright: 1.5, privacy: 0.5, disinfo: 1.0, bias: 0.5, depend: 1.0, manipul: 1.0, surveil: 1.0, distrust: 1.0, exclude: 0.5, all: 1.0 },
+  ownership: { copyright: 1.0, privacy: 1.5, disinfo: 0.5, bias: 1.0, depend: 0.5, manipul: 1.0, surveil: 1.0, distrust: 1.0, exclude: 1.5, all: 1.0 },
+  critique:  { copyright: 1.0, privacy: 1.0, disinfo: 1.0, bias: 1.0, depend: 1.0, manipul: 1.5, surveil: 1.0, distrust: 1.0, exclude: 1.0, all: 1.0 },
+  purpose:   { copyright: 1.0, privacy: 1.0, disinfo: 0.5, bias: 1.5, depend: 1.0, manipul: 1.0, surveil: 1.5, distrust: 1.0, exclude: 1.0, all: 1.0 },
+  everyone:  { copyright: 1.0, privacy: 1.0, disinfo: 1.0, bias: 1.0, depend: 1.0, manipul: 1.0, surveil: 1.0, distrust: 1.5, exclude: 1.0, all: 1.0 },
 };
 
 /* -----------------------------------------------------------
-   정화한 가치몬이 판단 도구를 키운다
+   정화한 가치몬이 판단 질문을 키운다
 
    잡아서 도감에 넣고 끝나면 도감은 목표일 뿐 도구가 되지 못한다.
    "배운 가치가 곧 내 판단력이 된다"가 이 게임의 주제이므로,
-   그 주제를 정화할수록 그 주제에 강한 도구가 세지게 한다.
+   가치몬은 자기 주제에 "효과 굉장"인 질문을 키운다. 상성표에서 저절로 나온다.
+     확인지기·진실지기(허위정보) → 진짜일까?      출처지기·허락지기(저작권) → 누구의 것일까?
+     동의지기·비밀지기(개인정보) → 누가 다칠까?    ...
+   "나는 왜 이걸 하려 하지?" 는 특정 주제가 약점이 아니므로
+   그 밖의 가치몬이 한 마리씩 조금(+5%) 키운다.
 
-     허위정보 가치몬(확인지기·진실지기) → 🔍 "진짜일까?"
-     저작권   가치몬(출처지기·허락지기) → ⚖️ "누구의 것일까?"
-     개인정보 가치몬(동의지기·비밀지기) → 🤝 "누가 다칠까?"
-     🧠 "나는 왜 이걸 하려 하지?" 는 특정 주제가 없으므로
-        "전체 정화 수"로 천천히 큰다.
+   세 스테이지를 지나면 몇몇 질문이 너무 세져서 상성을 따질 이유가 사라졌다.
+   그래서 강해지는 폭에 한도(+50%)를 둔다. 황무지에서도 상성이 맞는 질문이 가장 세다.
    ----------------------------------------------------------- */
-const TOOL_BOOST_TYPE = {
-  verify: "disinfo",
-  respect: "copyright",
-  ownership: "privacy",
-  critique: null, // 전체 정화 수로 큰다
-  purpose: "bias", // 편향 가치몬(두루지기·저마다지기)이 키운다
-};
+const TOOL_BOOST_PER = 0.15; // 자기 주제에 센 질문: 한 마리당 +15%
+const CRITIQUE_BOOST_PER = 0.05; // "나는 왜?": 그 밖의 가치몬 한 마리당 +5%
+const TOOL_BOOST_MAX = 1.5; // 아무리 커도 1.5배까지
 
-const TOOL_BOOST_PER = 0.15; // 같은 주제 한 마리당 배율 +0.15
-const CRITIQUE_BOOST_PER = 0.05; // "나는 왜?" 는 아무 몬스터나 한 마리당 +0.05
-
-/* 이 도구가 지금 얼마나 세졌는가 (1.0 이면 아직 그대로) */
-function getToolBoost(toolId) {
-  const type = TOOL_BOOST_TYPE[toolId];
-  if (!type) {
-    return 1 + dexCaughtCount() * CRITIQUE_BOOST_PER;
-  }
-  const n = MONSTERS.filter(function (m) {
-    return m.type === type && isCaught(m.id);
-  }).length;
-  return 1 + n * TOOL_BOOST_PER;
-}
-
-/* 그 도구를 키워 주는 가치몬 이름들 (화면에 이유를 보여 주려고) */
-function boostSourceNames(toolId) {
-  const type = TOOL_BOOST_TYPE[toolId];
-  if (!type) {
-    return dexCaughtCount() > 0 ? ["정화한 가치몬 " + dexCaughtCount() + "마리"] : [];
-  }
-  return MONSTERS.filter(function (m) {
-    return m.type === type && isCaught(m.id);
-  }).map(function (m) {
-    return m.purified.name;
+/* 이 몬스터를 정화하면 크게 자라는 질문들 */
+function toolsGrownBy(monster) {
+  return Object.keys(TOOLS).filter(function (id) {
+    return TYPE_CHART[id][monster.type] === 1.5;
   });
 }
 
-/* 배율에 따라 띄우는 문구 (1세대 "효과가 굉장했다!" 자리) */
-const EFFECT_MESSAGE = {
-  1.5: "효과가 굉장했다!",
-  1.0: "",
-  0.5: "효과가 별로였다...",
-};
+/* 몬스터 한 마리가 이 질문을 얼마나 키우는가 */
+function boostFrom(monster, toolId) {
+  if (toolsGrownBy(monster).indexOf(toolId) !== -1) return TOOL_BOOST_PER;
+  if (toolId === "critique") return CRITIQUE_BOOST_PER;
+  return 0;
+}
+
+/* 이 질문이 지금 얼마나 세졌는가 (1.0 이면 아직 그대로) */
+function getToolBoost(toolId) {
+  let b = 1;
+  MONSTERS.forEach(function (m) {
+    if (isCaught(m.id)) b += boostFrom(m, toolId);
+  });
+  return Math.min(TOOL_BOOST_MAX, Math.round(b * 100) / 100);
+}
+
+/* 그 질문을 키워 준 가치몬 이름들 (버튼에 이유를 보여 주려고) */
+function boostSourceNames(toolId) {
+  const named = [];
+  let others = 0;
+  MONSTERS.forEach(function (m) {
+    if (!isCaught(m.id)) return;
+    if (toolsGrownBy(m).indexOf(toolId) !== -1) named.push(m.purified.name);
+    else if (toolId === "critique") others++;
+  });
+  if (others > 0) named.push((named.length ? "그 밖의 " : "") + "가치몬 " + others + "마리");
+  return named;
+}
 
 /* 속성이 둘인 몬스터는 1.25 나 0.75 같은 어중간한 배율이 나온다.
    딱 떨어지는 값이 아니어도 문구가 나오도록 범위로 고른다. */
@@ -180,10 +202,8 @@ function getComboMultiplier(streak) {
   return COMBO_MULTIPLIER[Math.min(streak, 4)];
 }
 
-/* 데이터 도시의 몬스터는 속성을 둘 가질 수 있다.
-   상성이 반쪽만 맞으므로 어떤 질문을 쓸지 고르는 일 자체가 어려워진다.
-   두 배율의 평균을 쓴다. 1.5 와 0.5 가 만나면 1.0 이 되어,
-   "세게 때리려면 둘 다 맞는 질문을 찾아야 한다"가 된다. */
+/* 속성이 둘인 몬스터는 두 배율의 평균을 쓴다.
+   1.5 와 0.5 가 만나면 1.0 이 되어, "세게 때리려면 둘 다 맞는 질문을 찾아야 한다"가 된다. */
 function getTypeMultiplier(toolId, monsterType, monsterType2) {
   const a = TYPE_CHART[toolId][monsterType];
   if (!monsterType2) return a;

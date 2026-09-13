@@ -22,11 +22,12 @@ function renderReport(container) {
     "</p>";
   container.appendChild(head);
 
-  // 마을을 정화했으면 인쇄물 맨 위에도 남는다
-  if (villageIsPure()) {
+  // 정화를 끝낸 스테이지는 인쇄물 맨 위에도 남는다
+  for (let st = 1; st <= lastStage(); st++) {
+    if (!stageCleared(st)) continue;
     const clear = document.createElement("p");
     clear.className = "rep-clear";
-    clear.textContent = "★ AI 마을 정화 완료 — 일곱 AI몬스터를 모두 되돌렸어요";
+    clear.textContent = stageData(st).clear.report;
     container.appendChild(clear);
   }
 
@@ -45,7 +46,7 @@ function renderReport(container) {
   if (all.asked === 0) {
     const empty = document.createElement("p");
     empty.className = "rep-empty";
-    empty.textContent = "아직 푼 문제가 없어요. 데이터숲을 걸어 다니며 AI몬스터를 만나 보세요.";
+    empty.textContent = "아직 푼 문제가 없어요. 지도 위의 그림자몬에게 다가가 보세요.";
     container.appendChild(empty);
     return;
   }
@@ -60,8 +61,8 @@ function renderReport(container) {
   });
   container.appendChild(byType);
 
-  /* ---- 도구별 ---- 열린 질문까지만 */
-  container.appendChild(sectionTitle("어떤 판단 도구를 잘 쓰나요?"));
+  /* ---- 질문별 ---- 열린 질문까지만 */
+  container.appendChild(sectionTitle("어떤 질문을 잘 쓰나요?"));
   const byTool = document.createElement("div");
   byTool.className = "rep-bars";
   toolsForStage(reachedStage()).forEach(function (id) {
@@ -71,7 +72,7 @@ function renderReport(container) {
   container.appendChild(byTool);
 
   /* ---- 진단 한마디 ---- */
-  container.appendChild(sectionTitle("선생님 한마디"));
+  container.appendChild(sectionTitle("박사님 한마디"));
   const diag = document.createElement("div");
   diag.className = "rep-diag";
   diag.innerHTML = diagnose(all);
@@ -113,7 +114,7 @@ function renderReport(container) {
     note.className = "rep-subnote";
     note.textContent =
       "답을 알려주는 힌트가 아니라, 무엇을 따져봐야 하는지 되묻는 질문이에요. " +
-      "아이가 어느 상황에서 한 번 더 생각이 필요했는지 보여 줍니다.";
+      "어느 상황에서 한 번 더 생각이 필요했는지 보여 줘요. 전에 틀린 문제는 열쇠가 저절로 펼쳐져서 여기에 함께 들어가요.";
     container.appendChild(note);
 
     const hl = document.createElement("div");
@@ -135,7 +136,7 @@ function renderReport(container) {
     return save.wrongIds.indexOf(q.id) !== -1;
   });
   if (wrongs.length > 0) {
-    container.appendChild(sectionTitle("한 번이라도 틀렸던 문제 (" + wrongs.length + "개)"));
+    container.appendChild(sectionTitle("복습할 틀린 문제 (" + wrongs.length + "개)"));
     const list = document.createElement("div");
     list.className = "rep-wrongs";
     wrongs.forEach(function (q) {
@@ -154,7 +155,7 @@ function renderReport(container) {
 }
 
 /* ===========================================================
-   반 전체 기록 — 선생님용
+   이 컴퓨터 기록 — 선생님용
 
    한 컴퓨터에서 여러 학생이 했을 때, 누가 어디까지 했는지 한눈에 본다.
    이 화면도 그대로 인쇄된다.
@@ -166,7 +167,7 @@ function renderClassReport(container) {
   const head = document.createElement("div");
   head.className = "rep-head";
   head.innerHTML =
-    "<h2>반 전체 기록</h2>" +
+    "<h2>이 컴퓨터 기록</h2>" +
     "<p>이 컴퓨터에 남아 있는 기록 " + students.length + "명 · " +
     new Date().toLocaleDateString("ko-KR") + "</p>";
   container.appendChild(head);
@@ -181,7 +182,7 @@ function renderClassReport(container) {
 
   /* 반 평균 */
   let cRight = 0, cAsked = 0, cCaught = 0;
-  const byType = { copyright: { right: 0, asked: 0 }, privacy: { right: 0, asked: 0 }, disinfo: { right: 0, asked: 0 } };
+  const byType = emptyTally(topicIds());
   students.forEach(function (s) {
     cRight += s.right; cAsked += s.asked; cCaught += s.caught;
     const raw = roster[s.name];
@@ -195,20 +196,23 @@ function renderClassReport(container) {
   const tiles = document.createElement("div");
   tiles.className = "rep-tiles";
   tiles.appendChild(tile("참여한 학생", students.length + "명"));
-  tiles.appendChild(tile("반 평균 정답률", (cAsked ? Math.round((cRight / cAsked) * 100) : 0) + "%", cRight + " / " + cAsked + "문제"));
-  tiles.appendChild(tile("평균 정화 수", (students.length ? (cCaught / students.length).toFixed(1) : 0) + " / 6"));
+  tiles.appendChild(tile("평균 정답률", (cAsked ? Math.round((cRight / cAsked) * 100) : 0) + "%", cRight + " / " + cAsked + "문제"));
+  tiles.appendChild(tile("평균 정화 수", (students.length ? (cCaught / students.length).toFixed(1) : 0) + " / " + MONSTERS.length));
   container.appendChild(tiles);
 
-  /* 반 전체가 어느 주제를 어려워하나 */
-  container.appendChild(sectionTitle("우리 반이 어려워하는 주제"));
+  /* 반 전체가 어느 주제를 어려워하나 — 1스테이지 주제는 늘, 뒤 스테이지 주제는 누군가 풀었을 때만 */
+  const shown = topicIds().filter(function (t) {
+    return (TYPES[t].stage || 1) === 1 || byType[t].asked > 0;
+  });
+  container.appendChild(sectionTitle("주제별 정답률"));
   const bars = document.createElement("div");
   bars.className = "rep-bars";
-  ["copyright", "privacy", "disinfo"].forEach(function (t) {
+  shown.forEach(function (t) {
     bars.appendChild(bar(TYPES[t].name, byType[t].right, byType[t].asked, TYPES[t].accent));
   });
   container.appendChild(bars);
 
-  const weakest = ["copyright", "privacy", "disinfo"]
+  const weakest = shown
     .filter(function (t) { return byType[t].asked >= 5; })
     .sort(function (a, b) {
       return byType[a].right / byType[a].asked - byType[b].right / byType[b].asked;
@@ -217,7 +221,7 @@ function renderClassReport(container) {
     const note = document.createElement("div");
     note.className = "rep-diag";
     note.innerHTML =
-      "<p>반 전체가 <b>" + TYPES[weakest].name +
+      "<p>이 컴퓨터의 학생들이 <b>" + TYPES[weakest].name +
       "</b>" + josa(TYPES[weakest].name, "을", "를") +
       " 가장 어려워했어요. 이 주제를 함께 다시 짚어 보면 좋겠어요.</p>";
     container.appendChild(note);
@@ -228,7 +232,7 @@ function renderClassReport(container) {
   const table = document.createElement("table");
   table.className = "class-table";
   table.innerHTML =
-    "<thead><tr><th>이름</th><th>정화</th><th>정답률</th><th>푼 문제</th><th>마지막</th></tr></thead>";
+    "<thead><tr><th>학생</th><th>있는 곳</th><th>정화</th><th>정답률</th><th>푼 문제</th><th>마지막</th></tr></thead>";
   const tb = document.createElement("tbody");
   students.forEach(function (s) {
     const tr = document.createElement("tr");
@@ -236,8 +240,9 @@ function renderClassReport(container) {
       ? new Date(s.lastPlayed).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" })
       : "-";
     tr.innerHTML =
-      "<td class='ct-name'>" + escapeHtml(s.name) + "</td>" +
-      "<td>" + s.caught + " / 6</td>" +
+      "<td class='ct-name'>" + escapeHtml(s.label || s.name) + "</td>" +
+      "<td>" + escapeHtml(stageName(s.stage)) + "</td>" +
+      "<td>" + s.caught + " / " + MONSTERS.length + "</td>" +
       "<td>" + (s.asked ? Math.round(s.rate * 100) : 0) + "%</td>" +
       "<td>" + s.asked + "</td>" +
       "<td class='ct-when'>" + when + "</td>";
@@ -319,7 +324,7 @@ function diagnose(all) {
     lines.push(
       "아직 <b>" +
         unused.map(function (id) { return TOOLS[id].name; }).join(", ") +
-        "</b> 도구를 써 보지 않았어요. 다음엔 다른 방법으로도 맞서 보세요."
+        "</b> 질문을 써 보지 않았어요. 다음엔 다른 방법으로도 맞서 보세요."
     );
   }
 

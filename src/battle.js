@@ -24,6 +24,7 @@ const MON_SCALE = 16; // 16×16 스프라이트를 16배 → 256px
 const MON_OFFSET = (CANVAS_SIZE - 16 * MON_SCALE) / 2;
 
 const battle = {
+  mode: "normal", // normal = 질문을 골라 싸운다 · party = 가치몬과 함께 싸운다 (src/finale.js)
   monster: null,
   grip: 0,
   trust: 0,
@@ -42,7 +43,7 @@ const battle = {
   monY: 0, // 흔들림·튀어오름 연출용 세로 오프셋
   monAlpha: 1,
   ball: null, // {x, y, visible, shake}
-  fx: { flash: 0, rings: [], sparks: [], white: 0 }, // 정화 연출
+  fx: { flash: 0, rings: [], sparks: [], white: 0, party: [] }, // 정화 연출 (party = 모여든 가치몬)
   ctx: null,
   dom: {},
   onEnd: null,
@@ -52,6 +53,24 @@ const battle = {
    시작
    ----------------------------------------------------------- */
 function startBattle(monster, dom, onEnd) {
+  resetBattle(monster, dom, onEnd, "normal");
+
+  showMessage(
+    "앗! 야생 <b>" + monster.name + "</b>" + josa(monster.name, "이", "가") + " 나타났다!",
+    monster.desc,
+    "맞설 준비를 한다",
+    function () {
+      battle.phase = "tool";
+      // 첫 전투라면 도구와 상성을 먼저 알려준다.
+      // 이미 본 학생이면 tutorialBattle 이 곧바로 renderToolChoice 를 부른다.
+      tutorialBattle(monster, renderToolChoice);
+    }
+  );
+}
+
+/* 전투 상태를 새로 채운다 (보통 전투와 가치몬과 함께 싸우는 마지막 싸움이 함께 쓴다) */
+function resetBattle(monster, dom, onEnd, mode) {
+  battle.mode = mode || "normal";
   battle.monster = monster;
   battle.grip = monster.maxGrip;
   battle.trust = BALANCE.maxTrust;
@@ -71,7 +90,7 @@ function startBattle(monster, dom, onEnd) {
   battle.monY = 0;
   battle.monAlpha = 1;
   battle.ball = null;
-  battle.fx = { flash: 0, rings: [], sparks: [], white: 0 };
+  battle.fx = { flash: 0, rings: [], sparks: [], white: 0, party: [] };
   battle.dom = dom;
   battle.onEnd = onEnd;
 
@@ -84,18 +103,6 @@ function startBattle(monster, dom, onEnd) {
 
   drawBattle();
   updateGauges();
-
-  showMessage(
-    "앗! 야생 <b>" + monster.name + "</b>" + josa(monster.name, "이", "가") + " 나타났다!",
-    monster.desc,
-    "맞설 준비를 한다",
-    function () {
-      battle.phase = "tool";
-      // 첫 전투라면 도구와 상성을 먼저 알려준다.
-      // 이미 본 학생이면 tutorialBattle 이 곧바로 renderToolChoice 를 부른다.
-      tutorialBattle(monster, renderToolChoice);
-    }
-  );
 }
 
 /* -----------------------------------------------------------
@@ -164,6 +171,14 @@ function drawBattle() {
     drawSprite(ctx, BALL_SPRITE, BALL_PALETTE, b.x, b.y, 6, false);
   }
 
+  // 마지막 싸움 — 몬스터를 둘러싸고 모여든 가치몬들
+  fx.party.forEach(function (pm) {
+    if (pm.alpha <= 0) return;
+    ctx.globalAlpha = pm.alpha;
+    drawSprite(ctx, pm.grid, pm.pal, Math.round(pm.x), Math.round(pm.y), 2, false);
+  });
+  ctx.globalAlpha = 1;
+
   // 화면 전체가 번쩍
   if (fx.flash > 0) {
     ctx.globalAlpha = Math.min(1, fx.flash);
@@ -196,6 +211,17 @@ function updateGauges() {
   const acc = battle.asked > 0 ? Math.round((battle.right / battle.asked) * 100) : 0;
   d.scoreText.textContent = battle.right + " / " + battle.asked + " (" + acc + "%)";
 
+  // 가치몬과 함께 싸우는 마지막 싸움에는 볼이 없다
+  if (battle.mode === "party") {
+    const fought = typeof party !== "undefined" ? party.fought.length : 0;
+    d.catchHint.className = "catch-hint" + (battle.grip <= 0 ? " ready" : "");
+    d.catchHint.textContent =
+      battle.grip <= 0
+        ? "가치몬들이 모두 모여요!"
+        : "장악력을 0으로 만들면 가치몬들이 함께 정화해요. 함께 싸운 가치몬 " + fought + "마리";
+    return;
+  }
+
   const check = canThrowBall(battle.grip, m.maxGrip, battle.right, battle.asked);
   d.catchHint.className = "catch-hint" + (check.ok ? " ready" : "");
   if (check.ok) {
@@ -205,11 +231,11 @@ function updateGauges() {
     // "아직 안 사라졌다, 더 공격해라"는 목표라서 아이가 더 하고 싶어진다.
     d.catchHint.textContent = check.gripOk
       ? "장악력은 0이지만 아직 완전히 사라지지 않았어요! " +
-        check.needMore + "번 더 맞혀서 완전히 몰아내요."
-      : "아직 힘이 남아 있어요. " + check.needMore + "번은 더 맞혀야 해요.";
+        check.needMore + "번 더 맞서서 끝까지 몰아내요."
+      : "아직 장악력이 남아 있어요. " + check.needMore + "번은 더 맞서야 해요.";
   } else if (!check.gripOk && !check.accOk) {
     d.catchHint.textContent =
-      "장악력을 더 낮추고, 정답률도 " + accPct() + "% 이상이어야 해요.";
+      "장악력을 더 낮추고, 정답률도 " + accPct() + "% 이상으로 올려야 해요.";
   } else if (!check.gripOk) {
     d.catchHint.textContent =
       "장악력이 " + gripPctLimit() + "% 이하로 내려가야 볼을 던질 수 있어요.";
@@ -250,7 +276,7 @@ function buildHintBox(q, container) {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "hint-btn";
-  btn.textContent = seenWrong ? "🔑 생각 열쇠" : "🔑 생각 열쇠 — 막히면 눌러요";
+  btn.textContent = seenWrong ? "🔑 생각 열쇠" : "🔑 생각 열쇠 (막히면 눌러요)";
   box.appendChild(btn);
 
   const text = document.createElement("p");
@@ -325,8 +351,8 @@ function renderToolChoice() {
   const head = document.createElement("p");
   head.className = "panel-head";
   head.textContent = isFinal
-    ? battle.monster.name + "에게는 한 가지 눈으로 맞설 수 없어요. 방금 쓴 도구는 잠깁니다."
-    : "어떤 판단 도구로 맞설까?";
+    ? battle.monster.name + "에게는 한 가지 눈으로 맞설 수 없어요. 방금 쓴 질문은 잠깁니다."
+    : "어떤 질문으로 맞설까?";
   p.appendChild(head);
 
   const grid = document.createElement("div");
@@ -596,7 +622,7 @@ function renderResult(correct, choice, dmg, loss, instant) {
 
   const btn = document.createElement("button");
   btn.className = "btn primary";
-  btn.textContent = offerWhy ? "⭐ 보너스 — 왜 그럴까?" : "계속하기";
+  btn.textContent = offerWhy ? "⭐ 보너스: 왜 그럴까?" : "계속하기";
   btn.onclick = offerWhy
     ? function () { renderWhyBonus(q, dmg); }
     : afterResult;
@@ -734,7 +760,7 @@ function afterResult() {
   const check = canThrowBall(battle.grip, battle.monster.maxGrip, battle.right, battle.asked);
   if (check.ok) {
     showMessage(
-      "<b>" + battle.monster.name + "</b>의 힘이 크게 약해졌어요!",
+      "<b>" + battle.monster.name + "</b>의 장악력이 크게 줄었어요!",
       "이제 가치볼을 던져 정화할 수 있어요.",
       "가치볼 고르기",
       function () {
@@ -1067,17 +1093,16 @@ function showPurified() {
   l.textContent = m.purified.lesson;
   box.appendChild(l);
 
-  // 이번 정화로 어떤 판단 도구가 세졌는지 알려 준다
-  const grownTool = Object.keys(TOOLS).filter(function (id) {
-    return TOOL_BOOST_TYPE[id] === m.type;
-  })[0];
+  // 이번 정화로 어떤 판단 질문이 세졌는지 알려 준다
+  const grownTool = toolsGrownBy(m)[0];
   if (grownTool) {
     const up = document.createElement("p");
     up.className = "purify-boost";
     up.innerHTML =
       TOOLS[grownTool].icon + " <b>" + TOOLS[grownTool].name + "</b>" +
-      josa(TOOLS[grownTool].name, "이", "가") + " 더 강해졌어요! " +
-      "<span>지금 " + Math.round((getToolBoost(grownTool) - 1) * 100) + "% 강화</span>";
+      " 질문이 더 강해졌어요! " +
+      "<span>지금 " + Math.round((getToolBoost(grownTool) - 1) * 100) + "% 강화" +
+      (getToolBoost(grownTool) >= TOOL_BOOST_MAX ? " (최대)" : "") + "</span>";
     box.appendChild(up);
   }
 
@@ -1092,7 +1117,9 @@ function showPurified() {
   const btn = document.createElement("button");
   btn.className = "btn primary";
   // 마지막 한 마리라면 다음 화면이 엔딩이다. 그 사실을 버튼이 미리 말해 준다.
-  btn.textContent = m.finalBoss ? "AI 마을로 나가기" : "도감에 넣고 돌아가기";
+  btn.textContent = m.finalBoss
+    ? stageName(st) + josa(stageName(st), "으로", "로") + " 나가기"
+    : "도감에 넣고 돌아가기";
   btn.onclick = function () {
     endBattle("caught");
   };

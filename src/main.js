@@ -210,7 +210,7 @@ function renderStudentList() {
     del.textContent = "지움";
     del.title = (s.label || s.name) + " 기록 지우기";
     del.onclick = function () {
-      if (!confirm((s.label || s.name) + " 의 기록을 지울까요? 되돌릴 수 없어요.")) return;
+      if (!confirm((s.label || s.name) + "의 기록을 지울까요? 되돌릴 수 없어요.")) return;
       deleteStudent(s.name);
       renderStudentList();
     };
@@ -228,9 +228,11 @@ function show(name) {
   Object.keys(screens).forEach(function (k) {
     screens[k].classList.toggle("active", k === name);
   });
-  // 맵을 보고 있을 때만 몬스터가 둥실거린다 (안 보이는 화면을 계속 그릴 이유가 없다)
+  // 보고 있는 화면만 움직인다 (안 보이는 화면을 계속 그릴 이유가 없다)
   if (name === "map") startMapAnim();
   else stopMapAnim();
+  if (name === "title") startTitleAnim();
+  else stopTitleAnim();
   window.scrollTo(0, 0);
 }
 
@@ -270,7 +272,7 @@ function openAdmin() {
   const msg = document.getElementById("adminMsg");
   msg.textContent = sheetReady()
     ? ""
-    : "아직 시트 주소가 설정되지 않았어요. data/config.js 와 구글시트연동.md 를 보세요.";
+    : "아직 시트 주소가 설정되지 않았어요. data/config.js와 구글시트연동.md를 보세요.";
   msg.className = "admin-msg" + (sheetReady() ? "" : " warn");
   show("admin");
   document.getElementById("adminPw").focus();
@@ -354,11 +356,11 @@ function enterMap(message) {
 }
 
 /* -----------------------------------------------------------
-   마을 옮기기
+   스테이지 옮기기
 
-   데이터 도시는 AI 마을을 끝내야 열린다.
-   순서를 지키는 이유는 2스테이지 함정이 1스테이지 정답을 비틀기 때문이다.
-   마을을 안 거친 아이에게는 그 함정이 그냥 어려운 문제일 뿐이다.
+   다음 스테이지는 앞 스테이지를 끝내야 열린다.
+   순서를 지키는 이유는 뒤 스테이지의 함정이 앞 스테이지의 정답을 비틀기 때문이다.
+   앞을 안 거친 아이에게는 그 함정이 그냥 어려운 문제일 뿐이다.
    ----------------------------------------------------------- */
 function enterStage(n) {
   save.stage = n;
@@ -374,9 +376,10 @@ function enterStage(n) {
   updateHud();
   drawWorld();
 
-  if (n === 2) {
-    tutorialCity(function () {
-      flash("데이터 도시에 도착했어요. 새 질문이 열렸습니다!");
+  const def = stageData(n);
+  if (def.arrival) {
+    tutorialArrival(n, function () {
+      flash(def.arrivalFlash || stageName(n) + "에 도착했어요.");
     });
   } else {
     flash(stageName(n) + josa(stageName(n), "으로", "로") + " 돌아왔어요.");
@@ -410,14 +413,18 @@ function renderQuestBanner() {
   const box = document.getElementById("questBanner");
   const now = currentMission();
 
-  // 마을을 정화했으면 그 사실이 가장 크게 보여야 한다
+  // 지금 있는 곳을 정화했으면 그 사실이 가장 크게 보여야 한다
   if (villageIsPure()) {
+    const st = currentStage();
+    const def = stageData(st);
     box.classList.add("done");
     box.querySelector(".q-label").textContent = "CLEAR";
-    box.querySelector(".q-title").textContent = "AI 마을 정화 완료!";
-    box.querySelector(".q-desc").textContent =
-      "일곱 가치몬이 모두 돌아왔어요. 위의 엔딩 버튼으로 다시 볼 수 있어요.";
-    box.querySelector(".q-progress").textContent = "7 / 7";
+    box.querySelector(".q-title").textContent = def.clear.title;
+    box.querySelector(".q-desc").textContent = nextStageOpen()
+      ? "위의 엔딩 버튼을 누르면 " + stageName(st + 1) + josa(stageName(st + 1), "으로", "로") + " 떠날 수 있어요."
+      : def.clear.desc;
+    box.querySelector(".q-progress").textContent =
+      stageCaughtCount(st) + " / " + monstersOfStage(st).length;
     return;
   }
 
@@ -466,7 +473,9 @@ function onEncounter(monster) {
     scoreText: document.getElementById("scoreText"),
     catchHint: document.getElementById("catchHint"),
   };
-  startBattle(monster, dom, onBattleEnd);
+  // 황무지의 마지막 보스는 볼 대신 모은 가치몬과 함께 싸운다 (src/finale.js)
+  if (isPartyBoss(monster)) startPartyBattle(monster, dom, onBattleEnd);
+  else startBattle(monster, dom, onBattleEnd);
 }
 
 function onBattleEnd(reason, refilled) {
@@ -499,7 +508,7 @@ function onBattleEnd(reason, refilled) {
   cleared.forEach(function (m) {
     setTimeout(function () {
       sfx("caught");
-      flash("의뢰 완료 — " + m.title + (m.reward ? " · " + m.reward.label + " 받음!" : "!"));
+      flash("의뢰 완료! " + m.title + (m.reward ? " · " + m.reward.label + " 받음" : ""));
     }, delay);
     delay += 2800;
   });
@@ -507,23 +516,27 @@ function onBattleEnd(reason, refilled) {
   newBadges.forEach(function (b) {
     setTimeout(function () {
       sfx("purify");
-      flash("🏅 증표 획득 — " + b.name + "  (기록에 남아요)");
+      flash("🏅 증표 획득: " + b.name + " (기록에 남아요)");
     }, delay);
     delay += 2800;
   });
 
   if (appeared === "boss") {
+    const boss = monstersOfStage(currentStage()).filter(function (x) { return x.boss; })[0];
+    const spot = bossSpot();
+    const zone = zoneNames()[tileAt(spot.x, spot.y)] || "지도";
     setTimeout(function () {
       sfx("encounter");
-      flash("허위정보 데이터숲에 가짜몬이 나타났어요!");
+      flash(zone + "에 " + boss.name + josa(boss.name, "이", "가") + " 나타났어요!");
     }, delay);
     delay += 2800;
   }
 
   if (appeared === "final") {
+    const last = finalBossMonster();
     setTimeout(function () {
       sfx("encounter");
-      flash("지도 한복판이 어두워졌어요… 생각멈춤몬이 나타났습니다!");
+      flash("지도 한복판이 어두워졌어요. " + last.name + josa(last.name, "이", "가") + " 나타났습니다!");
     }, delay);
     delay += 3200;
   }
@@ -532,9 +545,12 @@ function onBattleEnd(reason, refilled) {
   // 예전에는 기록 화면이 슬쩍 열릴 뿐이라 끝난 줄도 몰랐다.
   // 알림이 여러 개 쌓여도 오래 기다리게 하지 않는다.
   // 증표는 엔딩 안에도 적히니 여기서 다 보여 줄 필요가 없다.
+  // 그사이 아이가 [엔딩] 버튼으로 먼저 들어가 다음 스테이지로 떠났다면 열지 않는다.
+  // (확인하지 않으면 새 스테이지 전투 중에 앞 스테이지 엔딩이 덮어쓴다)
   if (villageIsPure()) {
+    const clearedStage = currentStage();
     setTimeout(function () {
-      openEnding();
+      if (current === "map" && currentStage() === clearedStage && villageIsPure()) openEnding();
     }, Math.min(delay + 400, 2800));
   }
 }
@@ -601,8 +617,8 @@ function handleChoiceKey(e) {
   const n = parseInt(e.key, 10);
   if (!(n >= 1 && n <= 9)) return;
 
-  // 지금 화면에 있는 것 중 먼저 잡히는 것을 누른다
-  const groups = [".opt", ".tool-btn", ".ball-btn"];
+  // 지금 화면에 있는 것 중 먼저 잡히는 것을 누른다 (마지막 싸움의 가치몬 카드도 앞의 아홉까지)
+  const groups = [".opt", ".tool-btn", ".ball-btn", ".party-btn"];
   for (let i = 0; i < groups.length; i++) {
     const list = root.querySelectorAll(groups[i]);
     if (list.length >= n) {

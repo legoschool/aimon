@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI몬스터 — AI 시대 '가치몬'을 잡아라</title>
+<title>AI몬스터 · AI 시대 '가치몬'을 잡아라</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,15 +15,19 @@
   <button id="btnBgm" class="btn tiny">🎵 배경음</button>
 </div>
 
-<!-- ================= 타이틀 ================= -->
-<section id="screen-title" class="screen active">
+<!-- ================= 타이틀 (대문) =================
+     왼쪽: 이름 적고 시작 / 오른쪽: 이 게임이 무엇인지 (src/title.js 가 채운다) -->
+<section id="screen-title" class="screen wide active">
+ <div class="title-wrap">
   <div class="title-box">
     <h1 class="game-title">AI<span>몬스터</span></h1>
     <p class="game-sub">AI 시대 <b>'가치몬'</b>을 잡아라</p>
 
+    <canvas id="titleParade" class="title-parade" aria-label="그림자몬이 줄지어 걷다가 가치몬으로 바뀌는 모습"></canvas>
+
     <p class="title-story">
-      사람들이 무심코 저지르는 잘못이 <b>그림자몬</b>이 되어 떠돌고 있어요.<br>
-      상황 문제를 풀어 정체를 밝히고, <b>가치볼</b>로 붙잡아 정화해 주세요.
+      사람들이 AI를 쓰다 무심코 저지르는 잘못이 <b>그림자몬</b>이 되어 떠돌고 있어요.<br>
+      상황 문제를 풀어 정체를 밝히고, 붙잡아 <b>가치몬</b>으로 되돌려 주세요.
     </p>
 
     <div id="idRow" class="id-row">
@@ -55,14 +59,37 @@
     <p class="title-tip">방향키 또는 화면 아래 버튼으로 움직여요.</p>
     <button id="btnAdmin" class="teacher-link">선생님</button>
   </div>
+
+  <div class="title-info">
+    <section class="info-card">
+      <h2>이렇게 해요</h2>
+      <p class="info-lead">
+        AI를 쓸 때 멈춰서 따져볼 줄 알면 그림자몬을 이길 수 있어요.
+        정답을 외우는 게임이 아니라, <b>무엇을 물어야 하는지</b> 익히는 게임이에요.
+      </p>
+      <ol id="titleHow" class="how-steps"></ol>
+    </section>
+
+    <section class="info-card">
+      <h2>세 곳을 정화하는 여정</h2>
+      <div id="titleStages" class="stage-cards"></div>
+    </section>
+
+    <section class="info-card">
+      <h2>따져볼 질문</h2>
+      <p class="info-lead">스테이지를 지날 때마다 질문이 하나씩 늘어나요. 교실 밖에서도 그대로 쓰는 질문이에요.</p>
+      <div id="titleTools" class="tool-chips"></div>
+    </section>
+  </div>
+ </div>
 </section>
 
 <!-- ================= 맵 ================= -->
 <section id="screen-map" class="screen">
   <header class="map-hud">
     <span id="hudName" class="hud-chip name">탐험가</span>
-    <span id="hudDex" class="hud-chip">도감 0 / 6</span>
-    <span id="hudMission" class="hud-chip">의뢰 0 / 6</span>
+    <span id="hudDex" class="hud-chip">도감 0 / 7</span>
+    <span id="hudMission" class="hud-chip">의뢰 0 / 7</span>
     <span id="hudBalls" class="hud-chip">가치볼 6 · 3 · 1</span>
     <span class="hud-spacer"></span>
     <button id="btnMissions" class="btn small">의뢰</button>
@@ -156,7 +183,7 @@
 
   <div id="adminLogin" class="admin-login">
     <p class="sheet-note">
-      구글 시트에 모인 반 전체 기록을 봅니다. <b>암호는 Apps Script 에 적어 두신 것</b>이에요.
+      구글 시트에 모인 반 전체 기록을 봅니다. <b>암호는 Apps Script에 적어 두신 것</b>이에요.
     </p>
     <label class="name-row">
       <span>암호</span>
@@ -214,10 +241,10 @@
   <div id="reportBody" class="report-body"></div>
 </section>
 
-<!-- ================= 반 전체 기록 (선생님용) ================= -->
+<!-- ================= 이 컴퓨터 기록 (선생님용) ================= -->
 <section id="screen-class" class="screen">
   <header class="sheet-head no-print">
-    <h2>반 전체 기록</h2>
+    <h2>이 컴퓨터 기록</h2>
     <span class="sheet-spacer"></span>
     <button id="btnClassPrint" class="btn small">인쇄하기</button>
     <button id="btnClassBack" class="btn small">돌아가기</button>
@@ -228,7 +255,7 @@
 <!-- ================= 엔딩 (AI 마을 정화) ================= -->
 <section id="screen-ending" class="screen">
   <div class="end-stage">
-    <canvas id="endCanvas" aria-label="정화된 AI 마을"></canvas>
+    <canvas id="endCanvas" aria-label="정화된 지도"></canvas>
     <p id="endCaption" class="end-caption"></p>
     <button id="endSkip" class="btn tiny end-skip no-print">건너뛰기 ▶▶</button>
   </div>
@@ -247,15 +274,27 @@
   </div>
 </div>
 
-<!-- 데이터 -->
+<!-- 설정 -->
 <script src="data/config.js"></script>
+<!-- 공통 틀 — 스테이지들이 채워 넣는 목록과 도우미 -->
 <script src="data/tools.js"></script>
+<script src="data/map.js"></script>
 <script src="data/monsters.js"></script>
 <script src="data/questions.js"></script>
-<script src="data/player.js"></script>
-<script src="data/map.js"></script>
 <script src="data/missions.js"></script>
 <script src="data/badges.js"></script>
+<script src="data/player.js"></script>
+<!-- 스테이지 — 폴더 하나가 스테이지 하나 (지도·이야기·의뢰·증표 / 몬스터 / 문항) -->
+<script src="data/stage1/stage.js"></script>
+<script src="data/stage1/monsters.js"></script>
+<script src="data/stage1/questions.js"></script>
+<script src="data/stage2/stage.js"></script>
+<script src="data/stage2/monsters.js"></script>
+<script src="data/stage2/questions.js"></script>
+<script src="data/stage3/stage.js"></script>
+<script src="data/stage3/monsters.js"></script>
+<script src="data/stage3/questions.js"></script>
+<script src="data/stage3/finale.js"></script>
 <!-- 엔진 -->
 <script src="src/audio.js"></script>
 <script src="src/readlock.js"></script>
@@ -270,8 +309,10 @@
 <script src="src/review.js"></script>
 <script src="src/tutorial.js"></script>
 <script src="src/world.js"></script>
+<script src="src/title.js"></script>
 <script src="src/ending.js"></script>
 <script src="src/battle.js"></script>
+<script src="src/finale.js"></script>
 <script src="src/main.js"></script>
 </body>
 </html>

@@ -265,7 +265,7 @@ function remainingHint() {
       " 나타났어요. 마지막 관문이에요!";
   }
   if (last && isCaught(last.id)) {
-    return "모든 AI몬스터를 정화했어요. 당신은 진짜 " + last.purified.name + "예요!";
+    return "이곳의 AI몬스터를 모두 정화했어요. 이제 진짜 " + last.purified.name + "예요!";
   }
 
   const left = regularMonsters().filter(function (m) {
@@ -281,5 +281,5 @@ function remainingHint() {
     return "아직 " + left.length + "마리 · " + boss.name +
       josa(boss.name, "은", "는") + " 3마리를 정화해야 나타나요.";
   }
-  return "아직 " + left.length + "마리 남았어요. 풀숲 위의 몬스터에게 다가가 보세요.";
+  return "아직 " + left.length + "마리 남았어요. 지도 위의 그림자몬에게 다가가 보세요.";
 }
