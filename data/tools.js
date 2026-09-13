@@ -15,10 +15,24 @@ const TYPES = {
   /* --- 2스테이지 · 데이터 도시 ---
      1스테이지가 "내가 남에게 끼치는 해"라면 여기는
      "나에게 보이지 않게 일어나는 일"이다. 아이가 하는 쪽이 아니라 당하는 쪽이다. */
-  bias:    { id: "bias",    name: "편향", accent: "#c2407a" }, // 자홍
-  depend:  { id: "depend",  name: "의존", accent: "#2f8f8f" }, // 청록
-  manipul: { id: "manipul", name: "조작", accent: "#c0392b" }, // 붉은색
+  bias:    { id: "bias",    name: "편향", accent: "#c2407a", stage: 2 }, // 자홍
+  depend:  { id: "depend",  name: "의존", accent: "#2f8f8f", stage: 2 }, // 청록
+  manipul: { id: "manipul", name: "조작", accent: "#c0392b", stage: 2 }, // 붉은색
 };
+
+/* 문제의 주제 id 전부 — "all" 은 마지막 보스 전용이라 주제가 아니다 */
+function topicIds() {
+  return Object.keys(TYPES).filter(function (id) {
+    return id !== "all";
+  });
+}
+
+/* 그 스테이지의 주제들 (stage 가 없으면 1스테이지) */
+function typesOfStage(stage) {
+  return topicIds().filter(function (id) {
+    return (TYPES[id].stage || 1) === stage;
+  });
+}
 
 /* -----------------------------------------------------------
    판단 도구 4종 = 포켓몬의 "기술 4개" 자리

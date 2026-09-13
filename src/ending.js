@@ -331,7 +331,7 @@ function renderEndingBody(container) {
   const tools = document.createElement("div");
   tools.className = "end-tools";
   ids.forEach(function (id) {
-    const s = save.toolStats[id];
+    const s = tallyOrZero(save.toolStats, id);
     const rate = s.asked > 0 ? Math.round((s.right / s.asked) * 100) + "%" : "—";
     const c = document.createElement("div");
     c.className = "end-tool";

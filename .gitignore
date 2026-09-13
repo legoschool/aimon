@@ -6,6 +6,7 @@ desktop.ini
 # 편집기
 .vscode/
 .idea/
+.claude/
 
 # 혹시 나중에 도구를 쓰게 되면
 node_modules/

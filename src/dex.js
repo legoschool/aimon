@@ -42,6 +42,27 @@ function displayName(s) {
   return t.nick || t.name || "";
 }
 
+/* 주제·질문마다 { right, asked } 칸을 만든다.
+
+   예전에는 세 주제와 네 질문을 손으로 적어 두었다.
+   2스테이지가 편향·의존·조작과 다섯 번째 질문을 더했는데 칸은 그대로라서,
+   데이터 도시에서 첫 답을 고르는 순간 없는 칸에 숫자를 더하다 멈췄다.
+   [기록] 화면도 없는 질문 칸을 읽다 멈췄다.
+   이제 data/tools.js 의 목록에서 칸을 만들므로 주제나 질문이 늘면 칸도 따라 는다. */
+function emptyTally(ids) {
+  const t = {};
+  ids.forEach(function (id) {
+    t[id] = { right: 0, asked: 0 };
+  });
+  return t;
+}
+
+/* 칸이 없으면 만들어서 돌려준다 — 저장본이 어떤 모양이든 멈추지 않게 */
+function tallyOf(table, id) {
+  if (!table[id]) table[id] = { right: 0, asked: 0 };
+  return table[id];
+}
+
 function blankSave(name) {
   return {
     name: name || "탐험가", // 저장본을 찾는 열쇠
@@ -50,17 +71,8 @@ function blankSave(name) {
     nick: name || "탐험가", // 화면에 보이는 이름
     caught: [],
     balls: { basic: BALLS.basic.start, reason: BALLS.reason.start, sure: BALLS.sure.start },
-    stats: {
-      copyright: { right: 0, asked: 0 },
-      privacy: { right: 0, asked: 0 },
-      disinfo: { right: 0, asked: 0 },
-    },
-    toolStats: {
-      verify: { right: 0, asked: 0 },
-      respect: { right: 0, asked: 0 },
-      ownership: { right: 0, asked: 0 },
-      critique: { right: 0, asked: 0 },
-    },
+    stats: emptyTally(topicIds()),
+    toolStats: emptyTally(Object.keys(TOOLS)),
     wrongIds: [],
     hintIds: [], // 생각 열쇠를 쓴 문항 (어디서 막히는지 선생님께 보여 준다)
     battles: 0,
@@ -79,13 +91,27 @@ function blankSave(name) {
 
 const save = blankSave("");
 
-/* 저장본 하나를 save 에 옮겨 담는다 (예전 저장본에 없던 항목은 기본값으로 채움) */
+/* 저장본 하나를 save 에 옮겨 담는다 (예전 저장본에 없던 항목은 기본값으로 채움)
+
+   맨 윗단만 채우면 안 된다. 예전 저장본에도 stats 는 있으니 통째로 그대로 들어오고,
+   그 안에 새 주제 칸이 없어 멈춘다. 그래서 칸 묶음(stats·toolStats·balls·tutorial)은
+   기본값 위에 예전 값을 덮어 합친다. */
 function applySave(data) {
   const fresh = blankSave(data.name);
   Object.keys(fresh).forEach(function (k) {
-    save[k] = data[k] !== undefined ? data[k] : fresh[k];
+    const v = data[k];
+    if (v === undefined || v === null) {
+      save[k] = fresh[k];
+    } else if (isPlainObject(fresh[k]) && isPlainObject(v)) {
+      save[k] = Object.assign({}, fresh[k], v);
+    } else {
+      save[k] = v;
+    }
   });
-  if (!save.tutorial) save.tutorial = { intro: false, battle: false, catchTip: false };
+}
+
+function isPlainObject(v) {
+  return !!v && typeof v === "object" && !Array.isArray(v);
 }
 
 function loadRoster() {
@@ -205,6 +231,15 @@ function nextStageOpen() {
   return stageCleared(1) && currentStage() === 1;
 }
 
+/* 이 학생이 가 볼 수 있는 가장 먼 스테이지.
+   앞 스테이지의 마지막 보스를 정화해야 다음이 열린다.
+   기록 화면은 여기까지의 주제와 질문만 보여 준다 (아직 안 열린 것은 보여 주지 않는다). */
+function reachedStage() {
+  let n = 1;
+  while (n < LAST_STAGE && stageCleared(n)) n++;
+  return Math.max(n, currentStage());
+}
+
 function dexCaughtCount() {
   return save.caught.length;
 }
@@ -216,15 +251,18 @@ function markCaught(id) {
   }
 }
 
-/* 문제 하나 풀 때마다 기록 */
+/* 문제 하나 풀 때마다 기록
+   toolId 가 없으면(질문을 고르지 않는 싸움) 질문별 칸은 건드리지 않는다 */
 function recordAnswer(question, toolId, isCorrect) {
-  const s = save.stats[question.type];
+  const s = tallyOf(save.stats, question.type);
   s.asked++;
   if (isCorrect) s.right++;
 
-  const t = save.toolStats[toolId];
-  t.asked++;
-  if (isCorrect) t.right++;
+  if (toolId) {
+    const t = tallyOf(save.toolStats, toolId);
+    t.asked++;
+    if (isCorrect) t.right++;
+  }
 
   if (!isCorrect && save.wrongIds.indexOf(question.id) === -1) {
     save.wrongIds.push(question.id);

@@ -50,22 +50,22 @@ function renderReport(container) {
     return;
   }
 
-  /* ---- 속성별 ---- */
+  /* ---- 속성별 ---- 가 본 스테이지의 주제까지만 */
   container.appendChild(sectionTitle("어떤 주제를 잘 아나요?"));
   const byType = document.createElement("div");
   byType.className = "rep-bars";
-  ["copyright", "privacy", "disinfo"].forEach(function (t) {
-    const s = save.stats[t];
+  reachedTopics().forEach(function (t) {
+    const s = tallyOrZero(save.stats, t);
     byType.appendChild(bar(TYPES[t].name, s.right, s.asked, TYPES[t].accent));
   });
   container.appendChild(byType);
 
-  /* ---- 도구별 ---- */
+  /* ---- 도구별 ---- 열린 질문까지만 */
   container.appendChild(sectionTitle("어떤 판단 도구를 잘 쓰나요?"));
   const byTool = document.createElement("div");
   byTool.className = "rep-bars";
-  Object.keys(TOOLS).forEach(function (id) {
-    const s = save.toolStats[id];
+  toolsForStage(reachedStage()).forEach(function (id) {
+    const s = tallyOrZero(save.toolStats, id);
     byTool.appendChild(bar(TOOLS[id].icon + " " + TOOLS[id].name, s.right, s.asked, "#5a6b7d"));
   });
   container.appendChild(byTool);
@@ -186,8 +186,9 @@ function renderClassReport(container) {
     cRight += s.right; cAsked += s.asked; cCaught += s.caught;
     const raw = roster[s.name];
     Object.keys(byType).forEach(function (t) {
-      byType[t].right += raw.stats[t].right;
-      byType[t].asked += raw.stats[t].asked;
+      const st = tallyOrZero(raw.stats, t);
+      byType[t].right += st.right;
+      byType[t].asked += st.asked;
     });
   });
 
@@ -297,8 +298,8 @@ function diagnose(all) {
 
   // 가장 약한 속성 짚어주기
   let worst = null;
-  ["copyright", "privacy", "disinfo"].forEach(function (t) {
-    const s = save.stats[t];
+  reachedTopics().forEach(function (t) {
+    const s = tallyOrZero(save.stats, t);
     if (s.asked < 3) return;
     const r = s.right / s.asked;
     if (!worst || r < worst.rate) worst = { type: t, rate: r };
@@ -310,9 +311,9 @@ function diagnose(all) {
     );
   }
 
-  // 안 써 본 도구 짚어주기
-  const unused = Object.keys(TOOLS).filter(function (id) {
-    return save.toolStats[id].asked === 0;
+  // 안 써 본 도구 짚어주기 (열린 질문 중에서)
+  const unused = toolsForStage(reachedStage()).filter(function (id) {
+    return tallyOrZero(save.toolStats, id).asked === 0;
   });
   if (unused.length > 0) {
     lines.push(
@@ -327,6 +328,20 @@ function diagnose(all) {
   }
 
   return lines.map(function (l) { return "<p>" + l + "</p>"; }).join("");
+}
+
+/* 저장본의 칸을 읽는다. 없으면 0 으로 본다 (읽기만 하고 만들지는 않는다) */
+function tallyOrZero(table, id) {
+  return (table && table[id]) || { right: 0, asked: 0 };
+}
+
+/* 이 학생이 가 본 스테이지까지의 주제 */
+function reachedTopics() {
+  const list = [];
+  for (let st = 1; st <= reachedStage(); st++) {
+    typesOfStage(st).forEach(function (t) { list.push(t); });
+  }
+  return list;
 }
 
 /* -----------------------------------------------------------
