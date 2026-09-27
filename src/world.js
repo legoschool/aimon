@@ -205,6 +205,7 @@ function stopMapAnim() {
    움직이기
    ----------------------------------------------------------- */
 function moveWorld(dir) {
+  if (current !== 'map' || tutorialIsOpen()) return;
   if (world.moving) return;
   world.dir = dir;
 
@@ -245,6 +246,7 @@ function announceZone() {
 
 /* 몬스터가 서 있는 칸에 올라서면 전투가 시작된다 */
 function bumpIntoMonster() {
+  if (current !== 'map' || tutorialIsOpen()) return;
   const hit = world.spawns.filter(function (s) {
     return s.x === world.x && s.y === world.y;
   })[0];

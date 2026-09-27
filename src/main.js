@@ -142,6 +142,8 @@ window.addEventListener("DOMContentLoaded", function () {
   document.getElementById("btnClassPrint").onclick = function () { window.print(); };
 
   document.getElementById("tutorialNext").onclick = tutorialNext;
+  document.getElementById("tutorialPrev").onclick = tutorialPrev;
+  document.getElementById("btnStory").onclick = storyReplay;
 
   setupAudioControls();
   setupFontControl();
@@ -355,10 +357,9 @@ function enterMap(message) {
   if (audio.bgmOn) startBgm();
 
   // 처음 하는 학생에게만 박사님이 말을 건다
-  tutorialIntro(function () {
-    if (message) flash(message);
+  storyCheckpoint(function () {
+    tutorialIntro(function () { if (message) flash(message); });
   });
-  if (save.tutorial.intro && message) flash(message);
 }
 
 /* -----------------------------------------------------------
@@ -384,11 +385,11 @@ function enterStage(n) {
 
   const def = stageData(n);
   if (def.arrival) {
-    tutorialArrival(n, function () {
-      flash(def.arrivalFlash || stageName(n) + "에 도착했어요.");
+    storyCheckpoint(function () {
+      tutorialArrival(n, function () { flash(def.arrivalFlash || stageName(n) + "에 도착했어요."); });
     });
   } else {
-    flash(stageName(n) + josa(stageName(n), "으로", "로") + " 돌아왔어요.");
+    storyCheckpoint(function () { flash(stageName(n) + josa(stageName(n), "으로", "로") + " 돌아왔어요."); });
   }
 }
 
@@ -464,6 +465,11 @@ function flash(text) {
    조우 → 전투
    ----------------------------------------------------------- */
 function onEncounter(monster) {
+  if (monster.finalBoss) storyCheckpoint(function () { beginEncounter(monster); }, true);
+  else beginEncounter(monster);
+}
+
+function beginEncounter(monster) {
   sfx("encounter");
   show("battle");
   const dom = {
@@ -510,9 +516,12 @@ function onBattleEnd(reason, refilled) {
   if (msg) flash(msg);
 
   // 알릴 것이 겹치면 차례로 보여준다
+  const noticeStage = currentStage();
+  const canNotify = () => current === "map" && currentStage() === noticeStage && !tutorialIsOpen();
   let delay = msg ? 2000 : 300;
   cleared.forEach(function (m) {
     setTimeout(function () {
+      if (!canNotify()) return;
       sfx("caught");
       flash("의뢰 완료! " + m.title + (m.reward ? " · " + m.reward.label + " 받음" : ""));
     }, delay);
@@ -521,6 +530,7 @@ function onBattleEnd(reason, refilled) {
 
   newBadges.forEach(function (b) {
     setTimeout(function () {
+      if (!canNotify()) return;
       sfx("purify");
       flash("🏅 증표 획득: " + b.name + " (기록에 남아요)");
     }, delay);
@@ -532,6 +542,7 @@ function onBattleEnd(reason, refilled) {
     const spot = bossSpot();
     const zone = zoneNames()[tileAt(spot.x, spot.y)] || "지도";
     setTimeout(function () {
+      if (!canNotify()) return;
       sfx("encounter");
       flash(zone + "에 " + boss.name + josa(boss.name, "이", "가") + " 나타났어요!");
     }, delay);
@@ -541,24 +552,21 @@ function onBattleEnd(reason, refilled) {
   if (appeared === "final") {
     const last = finalBossMonster();
     setTimeout(function () {
+      if (!canNotify()) return;
       sfx("encounter");
       flash("지도 한복판이 어두워졌어요. " + last.name + josa(last.name, "이", "가") + " 나타났습니다!");
     }, delay);
     delay += 3200;
   }
 
-  // 마지막 보스까지 정화하면 엔딩으로 넘어간다.
-  // 예전에는 기록 화면이 슬쩍 열릴 뿐이라 끝난 줄도 몰랐다.
-  // 알림이 여러 개 쌓여도 오래 기다리게 하지 않는다.
-  // 증표는 엔딩 안에도 적히니 여기서 다 보여 줄 필요가 없다.
-  // 그사이 아이가 [엔딩] 버튼으로 먼저 들어가 다음 스테이지로 떠났다면 열지 않는다.
-  // (확인하지 않으면 새 스테이지 전투 중에 앞 스테이지 엔딩이 덮어쓴다)
-  if (villageIsPure()) {
+  // 읽는 중에는 지도와 전투를 멈춘다. 마지막 장을 직접 넘긴 뒤 엔딩을 연다.
+  if (reason === "caught") {
     const clearedStage = currentStage();
-    setTimeout(function () {
+    storyCheckpoint(function () {
       if (current === "map" && currentStage() === clearedStage && villageIsPure()) openEnding();
-    }, Math.min(delay + 400, 2800));
+    });
   }
+
 }
 
 /* -----------------------------------------------------------
@@ -574,6 +582,17 @@ const KEYMAP = {
 function setupKeys() {
   window.addEventListener("keydown", function (e) {
     if (tutorialIsOpen()) {
+      if (e.key === "Tab") {
+        const buttons = Array.from(document.querySelectorAll('#tutorial button:not([hidden]):not([disabled])'));
+        const at = buttons.indexOf(document.activeElement);
+        e.preventDefault();
+        if (buttons.length) buttons[(at + (e.shiftKey ? buttons.length - 1 : 1)) % buttons.length].focus();
+        return;
+      }
+      if (e.repeat) { e.preventDefault(); return; }
+      if (e.target.id === "tutorialPrev" && (e.key === "Enter" || e.key === " ")) {
+        e.preventDefault(); tutorialPrev(); return;
+      }
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         tutorialNext();

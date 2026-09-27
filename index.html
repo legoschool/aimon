@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AI몬스터 · AI 시대 '가치몬'을 잡아라</title>
-<link rel="stylesheet" href="style.css?v=personal1">
+<link rel="stylesheet" href="style.css?v=story1">
 </head>
 <body>
 
@@ -92,6 +92,7 @@
     <span id="hudMission" class="hud-chip">의뢰 0 / 7</span>
     <span id="hudBalls" class="hud-chip">가치볼 6 · 3 · 1</span>
     <span class="hud-spacer"></span>
+    <button id="btnStory" class="btn small">이야기 다시 읽기</button>
     <button id="btnMissions" class="btn small">의뢰</button>
     <button id="btnReview" class="btn small">복습</button>
     <button id="btnBadges" class="btn small">증표</button>
@@ -263,12 +264,13 @@
 </section>
 
 <!-- ================= 안내 (튜토리얼) ================= -->
-<div id="tutorial" class="tutorial">
+<div id="tutorial" class="tutorial" role="dialog" aria-modal="true" aria-label="이야기와 안내" tabindex="-1">
   <div class="tut-box">
     <div class="tut-doc" aria-hidden="true">🧑‍🔬</div>
     <div id="tutorialBody" class="tut-body"></div>
     <div class="tut-foot">
-      <div id="tutorialDots" class="tut-dots"></div>
+      <div id="tutorialDots" class="tut-dots" aria-live="polite"></div>
+      <button id="tutorialPrev" class="btn" hidden>이전</button>
       <button id="tutorialNext" class="btn primary">다음</button>
     </div>
   </div>
@@ -295,13 +297,14 @@
 <script src="data/stage3/monsters.js"></script>
 <script src="data/stage3/questions.js"></script>
 <script src="data/stage3/finale.js"></script>
+<script src="data/story.js?v=story1"></script>
 <script src="data/personal-badges.js?v=personal1"></script>
 <!-- 엔진 -->
 <script src="src/audio.js"></script>
 <script src="src/readlock.js"></script>
 <script src="src/render.js"></script>
 <script src="src/equations.js"></script>
-<script src="src/dex.js?v=personal1"></script>
+<script src="src/dex.js?v=story1"></script>
 <script src="src/records.js"></script>
 <script src="src/report.js"></script>
 <script src="src/missions.js"></script>
@@ -309,12 +312,13 @@
 <script src="src/sheet.js"></script>
 <script src="src/admin.js"></script>
 <script src="src/review.js"></script>
-<script src="src/tutorial.js"></script>
-<script src="src/world.js"></script>
+<script src="src/tutorial.js?v=story1"></script>
+<script src="src/story.js?v=story1"></script>
+<script src="src/world.js?v=story1"></script>
 <script src="src/title.js"></script>
 <script src="src/ending.js?v=personal1"></script>
 <script src="src/battle.js"></script>
 <script src="src/finale.js"></script>
-<script src="src/main.js?v=personal1"></script>
+<script src="src/main.js?v=story1"></script>
 </body>
 </html>

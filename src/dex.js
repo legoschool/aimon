@@ -86,6 +86,7 @@ function blankSave(name) {
     perfectCatch: false, // 한 문제도 안 틀리고 정화한 적이 있는가
     endingSeen: false, // 1스테이지 엔딩을 본 적이 있는가
     stage: 1, // 지금 있는 스테이지 (1 AI 마을, 2 데이터 도시, 3 잿빛 황무지)
+    storySeen: [], // 마지막 장까지 읽은 이야기 ID
     stagesSeen: [], // 엔딩을 본 스테이지 번호들
     // 마지막 싸움(src/finale.js)의 가장 좋은 기록. 여기 없으면 applySave 가 다시 불러올 때 버린다.
     reflection: { version: 1, fields: {}, selected: 0, completedAt: 0, updatedAt: 0 },
@@ -149,6 +150,7 @@ function writeSave() {
           save.reflection = newer.reflection;
         }
         save.badges = Array.from(new Set((save.badges || []).concat(newer.badges || [])));
+        save.storySeen = Array.from(new Set((save.storySeen || []).concat(newer.storySeen || [])));
         save.badgeEvidence = Object.assign({}, save.badgeEvidence, newer.badgeEvidence);
       }
       roster = disk;

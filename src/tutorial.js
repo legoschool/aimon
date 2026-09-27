@@ -14,9 +14,15 @@ const tutorial = {
   steps: [],
   index: 0,
   onDone: null,
+  timer: null,
+  visited: [],
+  returnFocus: null,
 };
 
 function tutorialOpen(steps, onDone) {
+  tutorial.returnFocus = document.activeElement;
+  document.querySelectorAll('.screen, .audio-bar').forEach(x => { if (!x.inert) { x.inert = true; x.dataset.tutorialInert = '1'; } });
+  tutorial.visited = [];
   tutorial.steps = steps;
   tutorial.index = 0;
   tutorial.onDone = onDone || null;
@@ -25,27 +31,50 @@ function tutorialOpen(steps, onDone) {
 }
 
 function tutorialRender() {
+  clearTimeout(tutorial.timer);
   const s = tutorial.steps[tutorial.index];
   const body = document.getElementById("tutorialBody");
   const btn = document.getElementById("tutorialNext");
   const dots = document.getElementById("tutorialDots");
+  const prev = document.getElementById('tutorialPrev');
+  document.querySelector('#tutorial .tut-box').scrollTop = 0;
+  prev.hidden = !s.story || tutorial.index === 0;
+  document.getElementById('tutorial').classList.toggle('story-mode', !!s.story);
+  btn.disabled = false;
 
   body.innerHTML =
     (s.title ? '<p class="tut-title">' + s.title + "</p>" : "") +
     '<p class="tut-text">' + s.text + "</p>";
+  if (s.story) {
+    body.innerHTML = '<div class="story-scene"><span>' + escapeHtml(stageName(s.stage)) + '</span>' +
+      storyPortrait(s) + '<p>' + escapeHtml(s.who) + '</p></div>' + body.innerHTML;
+    const note = document.createElement('p');
+    note.className = 'story-read-note';
+    note.textContent = '자동으로 넘어가지 않아요. 다 읽으면 눌러 주세요.';
+    body.appendChild(note);
+  }
 
   dots.innerHTML = tutorial.steps
     .map(function (_, i) {
       return '<i class="' + (i === tutorial.index ? "on" : "") + '"></i>';
     })
     .join("");
+  if (s.story) dots.textContent = (tutorial.index + 1) + ' / ' + tutorial.steps.length;
 
   const last = tutorial.index === tutorial.steps.length - 1;
   btn.textContent = last ? (s.done || "알겠어요!") : "다음";
-  btn.focus();
+  if (s.story && !tutorial.visited.includes(tutorial.index)) {
+    tutorial.visited.push(tutorial.index);
+    const label = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '잠깐 읽어요';
+    document.getElementById('tutorial').focus();
+    tutorial.timer = setTimeout(function () { btn.disabled = false; btn.textContent = label; btn.focus(); }, 2500);
+  } else btn.focus();
 }
 
 function tutorialNext() {
+  if (!tutorialIsOpen() || document.getElementById('tutorialNext').disabled) return;
   sfx("button");
   if (tutorial.index < tutorial.steps.length - 1) {
     tutorial.index++;
@@ -55,8 +84,17 @@ function tutorialNext() {
   tutorialClose();
 }
 
+function tutorialPrev() {
+  if (!tutorialIsOpen() || !tutorial.steps[tutorial.index].story || tutorial.index === 0) return;
+  tutorial.index--;
+  tutorialRender();
+}
+
 function tutorialClose() {
+  clearTimeout(tutorial.timer);
   document.getElementById("tutorial").classList.remove("on");
+  document.querySelectorAll('[data-tutorial-inert]').forEach(x => { x.inert = false; delete x.dataset.tutorialInert; });
+  if (tutorial.returnFocus && tutorial.returnFocus.isConnected) tutorial.returnFocus.focus();
   const done = tutorial.onDone;
   tutorial.onDone = null;
   if (done) done();

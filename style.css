@@ -629,6 +629,23 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
   display: none; align-items: center; justify-content: center; padding: 16px;
 }
 .tutorial.on { display: flex; }
+.tutorial.story-mode .tut-box { max-width: 640px; max-height: calc(100dvh - 40px); overflow-y: auto; }
+.story-mode .tut-doc { display: none; }
+.story-mode .tut-text { font-size: 1.08rem; line-height: 1.85; word-break: keep-all; overflow-wrap: anywhere; }
+.story-mode .tut-title { font-size: 1.3rem; margin: 18px 0 12px; }
+.story-scene { background: #283f38; color: #faf2d5; padding: 14px 18px; border: 3px solid var(--line); min-height: 92px; }
+.story-scene span { font-size: .8rem; color: #dfc57e; }
+.story-scene p { margin: 12px 0 0; font-weight: 800; }
+.story-portrait { float: right; width: 72px; height: 72px; image-rendering: pixelated; margin-left: 12px; }
+.story-read-note { font-size: .78rem; line-height: 1.6; color: #56574c; margin: 20px 0 0; }
+.story-mode .tut-foot { flex-wrap: wrap; }
+.story-mode .tut-dots { margin-right: auto; font-size: .85rem; }
+.tut-foot [hidden] { display: none; }
+@media(max-width: 420px) {
+  .tutorial.story-mode { padding: 10px; }
+  .story-mode .tut-box { padding: 14px; box-shadow: 4px 4px 0 var(--line); }
+  .story-mode .tut-text { font-size: 1rem; }
+}
 .tut-box {
   background: var(--panel); border: 4px solid var(--line);
   box-shadow: 8px 8px 0 var(--line);
