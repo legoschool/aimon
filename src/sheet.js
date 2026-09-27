@@ -89,6 +89,8 @@ function fetchClassRecords(password) {
             : "기록을 불러오지 못했어요."
         );
       }
-      return data.rows || [];
+      const rows = data.rows || [];
+      rows.sourceVersion = data.version || "unknown";
+      return rows;
     });
 }

@@ -10,3 +10,7 @@ desktop.ini
 
 # 혹시 나중에 도구를 쓰게 되면
 node_modules/
+
+# 문서에서 추출한 복사용 파일과 임시 UI 점검 화면
+exports/
+ui-preview.local.html

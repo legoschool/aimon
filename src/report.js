@@ -232,24 +232,25 @@ function renderClassReport(container) {
   const table = document.createElement("table");
   table.className = "class-table";
   table.innerHTML =
-    "<thead><tr><th>학생</th><th>있는 곳</th><th>정화</th><th>정답률</th><th>푼 문제</th><th>마지막</th></tr></thead>";
+    "<thead><tr><th>마지막 저장 (한국 시각)</th><th>학생</th><th>있는 곳</th><th>정화</th><th>정답률</th><th>푼 문제</th></tr></thead>";
   const tb = document.createElement("tbody");
   students.forEach(function (s) {
     const tr = document.createElement("tr");
-    const when = s.lastPlayed
-      ? new Date(s.lastPlayed).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" })
-      : "-";
+    const when = recordWhen(s);
     tr.innerHTML =
+      "<td class='ct-when'>" + escapeHtml(when) + "</td>" +
       "<td class='ct-name'>" + escapeHtml(s.label || s.name) + "</td>" +
       "<td>" + escapeHtml(stageName(s.stage)) + "</td>" +
       "<td>" + s.caught + " / " + MONSTERS.length + "</td>" +
       "<td>" + (s.asked ? Math.round(s.rate * 100) : 0) + "%</td>" +
-      "<td>" + s.asked + "</td>" +
-      "<td class='ct-when'>" + when + "</td>";
+      "<td>" + s.asked + "</td>";
     tb.appendChild(tr);
   });
   table.appendChild(tb);
-  container.appendChild(table);
+  const wrap = document.createElement("div");
+  wrap.className = "table-scroll";
+  wrap.appendChild(table);
+  container.appendChild(wrap);
 }
 
 /* -----------------------------------------------------------

@@ -136,7 +136,7 @@ window.addEventListener("DOMContentLoaded", function () {
   sendBtn.onclick = function () {
     sfx("button");
     const ok = sendRecord(true);
-    sendBtn.textContent = ok ? "보냈어요!" : "보낼 수 없어요";
+    sendBtn.textContent = ok ? "전송 요청했어요" : "보낼 수 없어요";
     setTimeout(function () { sendBtn.textContent = "시트로 보내기"; }, 2000);
   };
   document.getElementById("btnClassPrint").onclick = function () { window.print(); };

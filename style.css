@@ -34,10 +34,10 @@ html, body {
 
 body {
   min-height: 100vh;
-  /* 위쪽은 고정된 소리 버튼 자리만큼 비워 둔다 (내용과 겹치지 않게) */
-  padding: 46px 16px 16px;
+  padding: 8px 16px 16px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
 }
 
 .screen { display: none; width: 100%; max-width: 720px; }
@@ -547,7 +547,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
 .rep-value span { font-size: .84rem; color: var(--ink-soft); line-height: 1.5; }
 
 .rep-subnote {
-  margin: -6px 0 12px; font-size: .82rem; color: var(--ink-soft); line-height: 1.6;
+  margin: 12px 0; font-size: .82rem; color: var(--ink-soft); line-height: 1.6;
 }
 .rep-hints { display: grid; gap: 10px; }
 .rep-hint { border: 3px solid var(--line); padding: 10px 12px; background: #fdfaf0; }
@@ -573,8 +573,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
    소리 켜고 끄기
    ----------------------------------------------------------- */
 .audio-bar {
-  position: fixed; top: 8px; right: 10px; z-index: 40;
-  display: flex; gap: 6px;
+  position: static; width: 100%; margin-bottom: 12px;
+  display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px;
 }
 .btn.tiny {
   padding: 4px 9px; font-size: .74rem; font-weight: 700;
@@ -1016,3 +1016,21 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
   .end-sec { break-after: avoid; }
   .rep-section { break-after: avoid; }
 }
+
+.record-controls { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
+.record-controls select { max-width: 100%; padding: 6px; font: inherit; }
+.ct-when { white-space: nowrap; }
+@media print { .record-controls { display: none; } }
+
+/* 보고서 설명을 표 테두리에서 떼고, 긴 내용은 칸 안에서 줄바꿈한다. */
+.table-scroll + .rep-subnote { margin-top: 16px; }
+.table-scroll .class-table { width: max-content; min-width: 100%; }
+.table-scroll .class-table th, .table-scroll .class-table td { white-space: nowrap; }
+.rep-bars + .rep-diag { margin-top: 12px; }
+.record-controls > label { min-width: 0; max-width: 100%; }
+.rep-tile, .rep-value > div, .rep-badge > div, .el-text { min-width: 0; overflow-wrap: anywhere; }
+.rb-top, .sheet-head { flex-wrap: wrap; }
+/* 가로 모드와 큰 글씨에서도 안내의 다음 버튼까지 스크롤할 수 있게 한다. */
+.tutorial { overflow-y: auto; }
+.tut-box { max-height: calc(100dvh - 48px); overflow-y: auto; }
+.tut-doc { position: static; }

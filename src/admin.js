@@ -12,8 +12,42 @@
    그래도 멈추지 않고, 값이 온 주제만 막대와 칸으로 보여 준다.
    =========================================================== */
 
-function renderAdminRows(container, rows) {
+function renderAdminRows(container, allRows, view) {
+  const state = view || { klass: "", order: "recent" };
+  const rows = sortRecordRows(allRows.filter(function (r) {
+    return !state.klass || String(r.klass || "") === state.klass;
+  }), state.order);
   container.innerHTML = "";
+
+  const controls = document.createElement("div");
+  controls.className = "record-controls";
+  function addSelect(labelText, values, selected, change) {
+    const label = document.createElement("label");
+    label.textContent = labelText + " ";
+    const select = document.createElement("select");
+    values.forEach(function (item) {
+      const option = document.createElement("option");
+      option.value = item[0]; option.textContent = item[1];
+      select.appendChild(option);
+    });
+    select.value = selected;
+    select.onchange = function () { change(select.value); renderAdminRows(container, allRows, state); };
+    label.appendChild(select); controls.appendChild(label);
+  }
+  const classes = Array.from(new Set(allRows.map(function (r) { return String(r.klass || ""); })))
+    .filter(Boolean).sort(function (a, b) { return a.localeCompare(b, "ko", { numeric: true }); });
+  addSelect("반", [["", "전체 반"]].concat(classes.map(function (k) { return [k, k]; })),
+    state.klass, function (v) { state.klass = v; });
+  addSelect("정렬", [["recent", "최근 수신순"], ["student", "반·번호순"], ["progress", "정화 수순"]],
+    state.order, function (v) { state.order = v; });
+  container.appendChild(controls);
+  if (allRows.sourceVersion && !/^v(?:[4-9]|[1-9][0-9]+)$/.test(allRows.sourceVersion)) {
+    const warning = document.createElement("p");
+    warning.className = "rep-subnote";
+    warning.textContent = "시트 연결 버전: " + allRows.sourceVersion +
+      ". 현재 게임용 v4 코드로 연결을 갱신해야 합니다. 날짜와 2·3스테이지 기록은 빠져 있을 수 있습니다.";
+    container.appendChild(warning);
+  }
 
   if (!rows.length) {
     const p = document.createElement("p");
@@ -46,9 +80,9 @@ function renderAdminRows(container, rows) {
   const head = document.createElement("div");
   head.className = "rep-head";
   head.innerHTML =
-    "<h2>반 전체 기록</h2><p>" + rows.length + "명 · " +
+    "<h2>" + (state.klass ? esc(state.klass) + " 기록" : "전체 반 기록") + "</h2><p>" + rows.length + "명 · " +
     new Date().toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) +
-    " 기준</p>";
+    " 조회 · 누적 기록</p>";
   container.appendChild(head);
 
   const tiles = document.createElement("div");
@@ -88,24 +122,23 @@ function renderAdminRows(container, rows) {
     container.appendChild(note);
   }
 
-  /* --- 학생별 표 (정화 수 → 정답률 순) --- */
+  /* 학생별 최신 누적 기록. 성적 순위를 표시하지 않는다. */
   container.appendChild(sectionTitle("학생별 기록"));
   const wrap = document.createElement("div");
   wrap.className = "table-scroll";
   const table = document.createElement("table");
   table.className = "class-table admin-table";
   table.innerHTML =
-    "<thead><tr><th>#</th><th>반</th><th>번호</th><th>별명</th><th>있는 곳</th>" +
+    "<thead><tr><th>시트 수신 일시 (한국 시각)</th><th>반</th><th>번호</th><th>별명</th><th>있는 곳</th>" +
     "<th>정화</th><th>증표</th><th>정답률</th><th>푼 문제</th>" +
     shownTopics.map(function (k) { return "<th>" + TYPES[k].name + "</th>"; }).join("") +
-    "<th>🔑</th><th>마지막</th></tr></thead>";
+    "<th>🔑</th></tr></thead>";
   const tb = document.createElement("tbody");
   rows.forEach(function (r, i) {
     const tr = document.createElement("tr");
-    if (i < 3) tr.className = "top" + (i + 1);
     const stage = Number(r.stage) || 0;
     tr.innerHTML =
-      "<td>" + (i + 1) + "</td>" +
+      "<td class='ct-when'>" + esc(recordWhen(r)) + "</td>" +
       "<td>" + esc(r.klass) + "</td>" +
       "<td>" + esc(r.number) + "</td>" +
       "<td class='ct-name'>" + esc(r.nick) + "</td>" +
@@ -117,8 +150,7 @@ function renderAdminRows(container, rows) {
       shownTopics.map(function (k) {
         return "<td>" + (hasValue(r[k]) ? r[k] + "%" : "-") + "</td>";
       }).join("") +
-      "<td>" + (r.hints || 0) + "</td>" +
-      "<td class='ct-when'>" + (esc(r.when) || "-") + "</td>";
+      "<td>" + (r.hints || 0) + "</td>";
     tb.appendChild(tr);
   });
   table.appendChild(tb);
@@ -129,7 +161,8 @@ function renderAdminRows(container, rows) {
   legend.className = "rep-subnote";
   legend.textContent =
     "🔑 은 생각 열쇠를 쓴 문제 수예요. 전에 틀린 문제는 열쇠가 저절로 펼쳐지므로 함께 셉니다. " +
-    "같은 반·번호는 가장 최근 기록만 나옵니다.";
+    "같은 반·번호는 마지막으로 받은 누적 기록만 나옵니다. 날짜별 학습 내역은 이 표에 포함되지 않습니다. " +
+    "날짜 정보가 없는 기록은 최근 수신순에서 아래에 표시합니다. 원본 표시는 서버가 보낸 글자이며 날짜순 비교에는 쓰지 않습니다.";
   container.appendChild(legend);
 }
 
