@@ -88,6 +88,8 @@ function blankSave(name) {
     stage: 1, // 지금 있는 스테이지 (1 AI 마을, 2 데이터 도시, 3 잿빛 황무지)
     stagesSeen: [], // 엔딩을 본 스테이지 번호들
     // 마지막 싸움(src/finale.js)의 가장 좋은 기록. 여기 없으면 applySave 가 다시 불러올 때 버린다.
+    reflection: { version: 1, fields: {}, selected: 0, completedAt: 0, updatedAt: 0 },
+    badgeEvidence: {},
     partyBest: 0, // 함께 싸운 가치몬 수
     partyBestHits: 0, // 딱 맞는 가치몬을 찾아낸 횟수 (짝꿍 증표)
   };
@@ -137,6 +139,22 @@ function writeRoster() {
 
 function writeSave() {
   if (!save.name) return;
+  // 다른 창에서 저장한 회고와 다른 학생의 기록을 오래된 명부로 덮지 않는다.
+  try {
+    const disk = JSON.parse(localStorage.getItem(ROSTER_KEY) || '{}');
+    if (isPlainObject(disk)) {
+      const newer = disk[save.name];
+      if (newer) {
+        if (Number((newer.reflection || {}).updatedAt) > Number((save.reflection || {}).updatedAt || 0)) {
+          save.reflection = newer.reflection;
+        }
+        save.badges = Array.from(new Set((save.badges || []).concat(newer.badges || [])));
+        save.badgeEvidence = Object.assign({}, save.badgeEvidence, newer.badgeEvidence);
+      }
+      roster = disk;
+    }
+  } catch (e) { /* 저장소를 읽지 못하면 현재 메모리의 기록을 쓴다 */ }
+  awardPersonalBadges(save);
   save.lastPlayed = Date.now();
   roster[save.name] = JSON.parse(JSON.stringify(save));
   writeRoster();

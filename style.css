@@ -1034,3 +1034,21 @@ button:focus-visible, input:focus-visible { outline: 3px solid #2f6fb2; outline-
 .tutorial { overflow-y: auto; }
 .tut-box { max-height: calc(100dvh - 48px); overflow-y: auto; }
 .tut-doc { position: static; }
+
+/* 학생별 배지: 첫 화면에서 획득한 모양과 근거를 함께 본다. */
+.student-list { max-height: none; overflow: visible; }
+.student-achievements { border: 2px solid #b2b89e; background: #eff0e3; padding: 12px; margin: -2px 0 12px; min-width: 0; }
+.achievement-label { font-size: .8rem; font-weight: 800; margin: 0 0 8px; }
+.achievement-strip { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; font-size: .75rem; }
+.achievement-token { display: flex; gap: 8px; align-items: center; background: #fffdf1; border: 1px solid #c8b36f; padding: 7px; overflow-wrap: anywhere; }
+.achievement-token img { width: 40px; height: 48px; object-fit: contain; flex-shrink: 0; }
+.student-achievements details { margin: 12px 0; font-size: .75rem; }
+.student-achievements summary { cursor: pointer; font-weight: 700; }
+.achievement-note { color: var(--ink-soft); }
+.achievement-stats { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
+.achievement-stats p, .achievement-evidence { margin: 0; padding: 6px 0; border-bottom: 1px solid #d0d5c3; overflow-wrap: anywhere; }
+.badge-card.locked .badge-img { filter: grayscale(1); opacity: .45; }
+@media(max-width:400px) { .achievement-strip, .achievement-stats { grid-template-columns: 1fr; } }
+
+.achievement-token { flex-direction: column; text-align: center; gap: 4px; }
+.achievement-token span { word-break: keep-all; overflow-wrap: anywhere; }

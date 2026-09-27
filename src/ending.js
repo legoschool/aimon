@@ -423,6 +423,13 @@ function renderEndingBody(container) {
   };
   row.appendChild(bMap);
 
+  if (st === lastStage() && isCaught("eochapi")) {
+    const pledge = document.createElement("a");
+    pledge.className = "btn primary";
+    pledge.textContent = completedReflection(save) ? "내 약속과 배지 보기" : "약속 쓰고 배지 받기";
+    pledge.href = "mockups/ending-reflection.html?mode=game&student=" + encodeURIComponent(save.name);
+    row.prepend(pledge);
+  }
   container.appendChild(row);
 }
 

@@ -20,7 +20,7 @@ function scriptList() {
   const list = [];
   const re = /<script src="([^"]+)"><\/script>/g;
   let m;
-  while ((m = re.exec(html))) list.push(m[1]);
+  while ((m = re.exec(html))) list.push(m[1].split("?")[0]);
   return list;
 }
 

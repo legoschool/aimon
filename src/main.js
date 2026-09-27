@@ -184,6 +184,11 @@ function setupAudioControls() {
    타이틀 — 이 컴퓨터에 남아 있는 학생 목록
    ----------------------------------------------------------- */
 function renderStudentList() {
+  let migrated = false;
+  Object.keys(roster).forEach(function (key) {
+    if (awardPersonalBadges(roster[key]).length) migrated = true;
+  });
+  if (migrated) writeRoster();
   const students = listStudents();
   el.studentBox.style.display = students.length ? "" : "none";
   el.studentList.innerHTML = "";
@@ -217,6 +222,7 @@ function renderStudentList() {
     row.appendChild(del);
 
     el.studentList.appendChild(row);
+    renderStudentBadges(el.studentList, roster[s.name], s.name);
   });
 }
 
