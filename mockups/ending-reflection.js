@@ -28,7 +28,7 @@ function updatePreview() {
   $('ownerText').textContent=$('nickname').value.trim()||'탐험가';
 }
 function invalidate() {
-  complete=false;$('state').textContent='작성 중';$('print').disabled=true;
+  complete=false;$('certificate').classList.remove('sealed');$('state').textContent='작성 중';$('print').disabled=true;
   $('writtenBadge').classList.remove('earned');$('badgeStatus').textContent='기록장을 완성하면 받아요';
   $('message').textContent='';updatePreview();
 }
@@ -43,11 +43,11 @@ $('back').onclick=()=>showStep(step-1);
 $('next').onclick=()=>{
   const required=[['choice'],['reason','condition'],fields][step];
   const missing=required.find(id=>!$(id).value.trim());
-  if(missing){showStep(missing==='choice'?0:['reason','condition'].includes(missing)?1:2);$('message').textContent='빈 칸에 내 생각을 적어 주세요. 글의 길이나 정답 여부를 채점하지 않아요.';$(missing).focus();return;}
+  if(missing){showStep(missing==='choice'?0:['reason','condition'].includes(missing)?1:2);$('message').textContent='빈 칸에 내 생각을 적어 주세요. 짧게 써도 괜찮아요.';$(missing).focus();return;}
   if(step<2){showStep(step+1);return;}
-  complete=true;$('state').textContent='기록장 완성';$('print').disabled=false;
-  $('writtenBadge').classList.add('earned');$('badgeStatus').textContent='내 선택과 이유, 약속을 남겼어요';
-  $('message').textContent='약속 작성 배지를 받았어요. 실천 배지는 실제 경험을 돌아본 뒤 받아요.';
+  complete=true;$('certificate').classList.add('sealed');$('state').textContent='기록장 완성';$('print').disabled=false;
+  $('writtenBadge').classList.add('earned');$('badgeStatus').textContent='획득 완료 · 약속 작성';
+  $('message').textContent='‘약속의 문장’을 받았어요. 기록장을 인쇄해 보관할 수 있어요.';
   $('certificate').scrollIntoView({behavior:'smooth',block:'start'});
 };
 fields.forEach(id=>$(id+'Text').dataset.empty=$(id+'Text').textContent);

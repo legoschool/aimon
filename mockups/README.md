@@ -1,4 +1,4 @@
-# 엔딩 확장 목업: 나의 다음 선택
+# 엔딩 확장 목업: 탐험가의 약속
 
 `ending-reflection.html`을 열면 실제 게임의 가치몬 그림을 사용한 독립 목업이 나온다. 세 곳을 완료한 뒤를 가정한다. 가상 여정이다. 게임 저장본을 읽거나 시트에 전송하지 않는다.
 
@@ -34,3 +34,7 @@
 ## 파일
 
 `ending-reflection.html`은 화면 구조, `ending-reflection.css`는 색·간격·모바일·인쇄 모양, `ending-reflection.js`는 예시와 입력 동작을 담는다. 기존 게임과 분리했다. 픽셀 그림은 `data/stageN/monsters.js`와 `src/render.js`에서 가져온다.
+
+## 배지 그림
+
+`badge-pledge.svg`는 책과 펜을 새긴 금색 테두리 문장, `badge-trail.svg`는 발자국과 새싹 문장이다. 작성 전에는 색을 낮추고, 완성하면 첫 문장과 카드가 금색·녹색으로 바뀐다. 두 번째 배지는 잠긴 상태다.
