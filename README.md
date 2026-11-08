@@ -4,6 +4,8 @@
 
 학생용 주소: https://legoschool.github.io/aimon/
 
+**선생님이 사본으로 가져가기:** [사본으로_가져가기.md](사본으로_가져가기.md) · 선생님용 압축 파일은 [Releases](https://github.com/legoschool/aimon/releases/latest)에 있습니다.
+
 다음 작업자는 [인수인계서.md](인수인계서.md)에서 저장 구조와 재검사 방법을 확인할 수 있습니다. 커밋별 변경과 검증 범위는 [작업기록.md](작업기록.md)에 남겼습니다.
 
 수업 흐름은 [수업활용안내.md](수업활용안내.md), 시트로 기록 모으기는 [구글시트연동.md](구글시트연동.md), 인쇄해서 검토할 문항 전체는 [문항표.md](문항표.md)에 있습니다. 이 파일에는 게임의 짜임과 고칠 곳을 적었습니다.
@@ -62,7 +64,7 @@
 | 난이도 숫자 | `src/equations.js` | `BALANCE`는 모든 스테이지, `STAGE_BALANCE`는 도시와 황무지 |
 | 어차피몬 싸움의 위력 | `data/stage3/finale.js` 위쪽 | `baseDamage`, `match`. 장악력은 `data/stage3/monsters.js`의 `maxGrip` |
 | 대문 제목과 첫 문장 | `index.html` 21~60행 | 아래쪽 카드 세 칸은 `src/title.js`가 data 폴더의 표에서 만듭니다 |
-| 시트 연동 주소, 반·번호 받기 | `data/config.js` 12~20행 | `SHEET_ENDPOINT`, `SHEET_ENABLED`, `ASK_CLASS_NUMBER` |
+| 시트 연동 주소, 반·번호 받기 | `data/config.js` | `MY_SHEET_ENDPOINT`, `SHEET_ENABLED`, `ASK_CLASS_NUMBER`. 원본 창구 `ORIGIN_SHEET_ENDPOINT`는 legoschool.github.io/aimon에서만 쓰입니다 |
 
 문항 한 개는 이렇게 생겼습니다.
 
@@ -108,13 +110,9 @@ node tools/simulate.js 200
 
 ---
 
-## 옆 반 선생님이 쓰려면
+## 다른 선생님이 사본으로 가져가려면
 
-사본 만들기, 바꿀 곳, 배포의 세 단계입니다.
-
-1. 사본 만들기. https://github.com/legoschool/aimon 을 열고 오른쪽 위 [Fork]를 누릅니다. GitHub 계정이 없으면 폴더를 통째로 USB에 담아 교실 컴퓨터마다 복사해도 됩니다. 이때 기록은 각 컴퓨터에만 남습니다.
-2. 바꿀 곳. `data/config.js` 12~13행 `SHEET_ENDPOINT`를 새로 만든 Apps Script 주소로 바꿉니다(`구글시트연동.md` 1~4단계). 시트를 쓰지 않으면 16행 `SHEET_ENABLED`를 `false`로 둡니다. **주소를 그대로 두면 옆 반 학생 기록이 이 저장소를 만든 선생님의 시트로 갑니다.**
-3. 배포. 사본 저장소의 Settings → Pages에서 Branch를 `main`, 폴더를 `/ (root)`로 고르고 Save를 누릅니다. 1~2분 뒤 `https://(GitHub 아이디).github.io/aimon/`에서 열립니다.
+[사본으로_가져가기.md](사본으로_가져가기.md)에 내려받아 쓰기, 내 시트에 기록 모으기, 내 깃허브 주소로 올리기를 차례로 적었습니다. 사본에서는 원본 시트 창구가 꺼져 있어서, 선생님이 `data/config.js`의 `MY_SHEET_ENDPOINT`에 자기 주소를 넣기 전까지 기록은 각 컴퓨터에만 남습니다.
 
 ## 학년이 바뀌면
 
@@ -182,6 +180,8 @@ DESIGN.md             설계와 그렇게 정한 이유
 ## 저작권
 
 몬스터 이름, 그림, 문제, 해설, 소리를 모두 새로 만들었습니다. 포켓몬 계열 공개 프로젝트 두 곳은 파일을 나누는 방식과 잡기 확률 공식의 생각만 참고했고 코드와 그림은 가져오지 않았습니다. 저작권을 가르치는 게임이라서 수업에서 이렇게 말할 수 있습니다. "이 게임도 남의 것을 베끼지 않고 만들었어요."
+
+게임 전체는 [CC BY-NC-SA 4.0](LICENSE.md)으로 나눕니다. 출처를 밝히면 고쳐 쓰고 다시 나눌 수 있고, 판매는 할 수 없으며, 고친 것도 같은 조건으로 나눕니다.
 
 ## 학생 기록의 날짜와 정렬
 
