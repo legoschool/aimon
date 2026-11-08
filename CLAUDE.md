@@ -36,3 +36,5 @@ serve.js 는 시트 연동을 끈 채로 내보낸다. 배포본(github.io)에�
 - 문항을 고치면 함정 설명도 맞춘다. 3스테이지는 `data/stage3/questions.js` 의 문항 위 `// 함정:` 주석, 2·3스테이지는 `스테이지2_문항설계.md` · `스테이지3_문항설계.md` 의 함정 표.
 - 저장본 칸을 새로 쓰면 `blankSave` 에 없는지 확인한다. 없으면 다시 불러올 때 사라진다 (partyBest 가 그랬다).
 - 시트 창구 코드는 `구글시트연동.md` 한 곳에만 있다. 창구 칸을 바꾸면 `src/sheet.js`, `src/admin.js` 와 함께 고치고 버전(VERSION)을 올린다.
+- 창구 코드를 바꾸면 사본용 시트(schoolemotion20 계정, 시트 `12ZI2v3NDlF4sIaI3HhrTqdkthT5H72EWlJ5f1jCyNCU`, 스크립트 `1bCg8FEc_vt0o80YlVjJRGaMtaqQbI5m2RDpZoPGcO2OVlbI5UpGDpjrp`)도 맞춘다. 빈 폴더에서 `clasp clone <스크립트 ID>` 뒤 `Code.gs` 머리말 아래 코드를 새 코드로 바꾸고 `clasp push --force`. 암호 줄은 `여기를바꾸세요`로 둔다. 이 시트에는 학생 기록을 넣지 않는다.
+- 선생님용 압축 파일은 `python tools/make-share-zip.py` 로 만들고 `gh release create` 로 올린다. `data/config.js` 의 `MY_SHEET_ENDPOINT` 가 비어 있어야 만들어진다.
