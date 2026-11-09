@@ -110,6 +110,7 @@
     const snapshots = [];
     const warnings = [];
     document.querySelectorAll('canvas').forEach((element, index) => {
+      if (element.closest('[data-legoschool-report-private], [data-html2canvas-ignore]')) return;
       const bounds = element.getBoundingClientRect();
       if (!element.width || !element.height || bounds.bottom <= 0 || bounds.top >= innerHeight || bounds.right <= 0 || bounds.left >= innerWidth) return;
       try {
@@ -119,10 +120,56 @@
         context.drawImage(element, 0, 0);
         const samples = context.getImageData(0, 0, Math.min(element.width, 8), Math.min(element.height, 8)).data;
         if (!samples.some((value, i) => i % 4 !== 3 && value > 8)) warnings.push('게임 그림 일부가 검게 보일 수 있어요. 미리보기를 확인해 주세요.');
-        snapshots.push({ index, dataUrl: snapshot.toDataURL('image/png') });
+        const dataUrl = snapshot.toDataURL('image/png');
+        const marker = uuid() + '-' + index, previousMarker = element.getAttribute('data-lsbr-canvas-marker');
+        element.setAttribute('data-lsbr-canvas-marker', marker);
+        snapshots.push({ marker, element, previousMarker, dataUrl });
       } catch (_) { warnings.push('브라우저가 게임 그림 일부의 캡처를 허용하지 않았어요.'); }
     });
     return { snapshots, warnings };
+  }
+
+  function modalSnapshots() {
+    const items = [];
+    document.querySelectorAll('dialog').forEach((element, index) => {
+      if (element.closest('[data-legoschool-report-private], [data-html2canvas-ignore]')) return;
+      let modal;
+      try { modal = element.matches(':modal'); } catch (_) { modal = element.open; }
+      if (!modal) return;
+      const rect = element.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const computed = getComputedStyle(element);
+      const style = Array.from(computed, name => [name, computed.getPropertyValue(name)]);
+      const backdrop = getComputedStyle(element, '::backdrop');
+      const marker = uuid() + '-' + index, previousMarker = element.getAttribute('data-lsbr-modal-marker');
+      element.setAttribute('data-lsbr-modal-marker', marker);
+      items.push({ marker, previousMarker, element, rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height }, style, backdrop: { backgroundColor: backdrop.backgroundColor, opacity: backdrop.opacity }, scrollTop: element.scrollTop, scrollLeft: element.scrollLeft });
+    });
+    // The most recently opened dialog belongs above any earlier dialog.
+    return items.sort((a, b) => (a.element === activeGameModal ? 1 : 0) - (b.element === activeGameModal ? 1 : 0));
+  }
+
+  function restoreModalLayers(cloned, snapshots) {
+    snapshots.forEach((item, order) => {
+      const original = cloned.querySelector('[data-lsbr-modal-marker="' + item.marker + '"]');
+      if (!original) return;
+      // HTML dialog cloning preserves `open`, but loses the modal top layer. Without
+      // this conversion the browser lays it out below the game and omits it entirely.
+      const layer = cloned.createElement('div');
+      layer.setAttribute('aria-hidden', 'true');
+      Object.assign(layer.style, { position: 'fixed', inset: '0', zIndex: String(2147483600 + order * 2), pointerEvents: 'none', backgroundColor: item.backdrop.backgroundColor || 'rgba(0,0,0,.1)', opacity: item.backdrop.opacity || '1' });
+      cloned.body.append(layer);
+      original.setAttribute('open', '');
+      item.style.forEach(([name, value]) => original.style.setProperty(name, value));
+      Object.assign(original.style, {
+        position: 'fixed', inset: 'auto', left: item.rect.left + 'px', top: item.rect.top + 'px',
+        width: item.rect.width + 'px', height: item.rect.height + 'px', minWidth: '0', minHeight: '0',
+        maxWidth: 'none', maxHeight: 'none', margin: '0', transform: 'none',
+        boxSizing: 'border-box', zIndex: String(2147483601 + order * 2)
+      });
+      cloned.body.append(original);
+      original.scrollTop = item.scrollTop; original.scrollLeft = item.scrollLeft;
+    });
   }
 
   async function capture() {
@@ -132,6 +179,7 @@
     $('#submit').disabled = true;
     status('현재 화면을 캡처하고 있어요…');
     const wasModal = dialog.open;
+    let markedCanvases = [], markedModals = [];
     if (wasModal) dialog.close();
     host.style.visibility = 'hidden';
     try {
@@ -140,6 +188,9 @@
       environment = collectEnvironment();
       capturedContext = collectContext();
       const { snapshots, warnings } = canvasSnapshots();
+      markedCanvases = snapshots;
+      const modals = modalSnapshots();
+      markedModals = modals;
       const result = await render(document.documentElement, {
         backgroundColor: getComputedStyle(document.body).backgroundColor || '#ffffff',
         x: scrollX, y: scrollY, width: innerWidth, height: innerHeight,
@@ -149,15 +200,15 @@
         ignoreElements: element => element === host || element.hasAttribute('data-legoschool-report-private'),
         onclone: cloned => {
           cloned.querySelectorAll('input[type="password"], [data-legoschool-report-private]').forEach(el => { el.style.visibility = 'hidden'; });
-          const clones = cloned.querySelectorAll('canvas');
-          snapshots.forEach(({ index, dataUrl }) => {
-            const original = clones[index];
+          snapshots.forEach(({ marker, dataUrl }) => {
+            const original = cloned.querySelector('[data-lsbr-canvas-marker="' + marker + '"]');
             if (!original) return;
             const image = cloned.createElement('img');
             Array.from(original.attributes).forEach(attribute => image.setAttribute(attribute.name, attribute.value));
             image.src = dataUrl; image.width = original.width; image.height = original.height;
             original.replaceWith(image);
           });
+          restoreModalLayers(cloned, modals);
         }
       });
       result.toDataURL('image/png'); // Explicitly reject a tainted result.
@@ -173,6 +224,10 @@
       captureInfo = { method: 'failed', warnings: [String(error.message).slice(0, 200)] };
       status('화면을 캡처하지 못했어요. 사진을 첨부하거나 설명만 보낼 수 있어요.', true);
     } finally {
+      [[markedCanvases, 'data-lsbr-canvas-marker'], [markedModals, 'data-lsbr-modal-marker']].forEach(([items, attribute]) => items.forEach(item => {
+        if (item.element.getAttribute(attribute) !== item.marker) return;
+        if (item.previousMarker == null) item.element.removeAttribute(attribute); else item.element.setAttribute(attribute, item.previousMarker);
+      }));
       host.style.visibility = '';
       capturing = false;
       $('#recapture').disabled = false;
