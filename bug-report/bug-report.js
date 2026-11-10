@@ -5,7 +5,7 @@
   const script = document.currentScript;
   const base = new URL('.', script && script.src ? script.src : location.href);
   const options = { ...((script && script.dataset) || {}) };
-  const VERSION = '1.1.1';
+  const VERSION = '1.2.0';
   const MAX_EDGE = 1920;
   const contextProviders = new Set();
   let host, root, dialog, canvas, baseImage, opened = false, busy = false, capturing = false;
@@ -16,6 +16,7 @@
   let activeGameModal = null;
   let placementTimer, placementFrame, placementLastRun = 0, launcherHovered = false;
   let launcherPosition = null;
+  let manualLauncherPosition = null, launcherDrag = null, suppressLauncherClickUntil = 0;
   let stylesheetLink, stylesReady = false, persistentStyles = false;
   const rewardedHere = new Set();
   const pendingRewards = new Map();
@@ -602,10 +603,7 @@
     return obstacles;
   }
 
-  function positionLauncher() {
-    placementTimer = null; placementFrame = null; placementLastRun = performance.now();
-    if (!host || !stylesReady || opened || capturing || document.hidden) return;
-    const launcher = $('#launcher');
+  function launcherViewport() {
     const viewport = window.visualViewport;
     const safe = getComputedStyle($('#safe-area'));
     const inset = side => Math.max(10, parseFloat(safe.getPropertyValue('padding-' + side)) || 0);
@@ -616,6 +614,66 @@
       bottom: (viewport ? viewport.offsetTop + viewport.height : innerHeight) - inset('bottom')
     };
     view.width = view.right - view.left; view.height = view.bottom - view.top;
+    return view;
+  }
+
+  function moveLauncher(x, y, view = launcherViewport()) {
+    const launcher = $('#launcher');
+    if (launcher.getBoundingClientRect().width > view.width) launcher.classList.add('compact');
+    const { width, height } = launcher.getBoundingClientRect();
+    manualLauncherPosition = {
+      x: Math.round(Math.max(view.left, Math.min(x, Math.max(view.left, view.right - width)))),
+      y: Math.round(Math.max(view.top, Math.min(y, Math.max(view.top, view.bottom - height))))
+    };
+    launcher.style.left = manualLauncherPosition.x + 'px'; launcher.style.top = manualLauncherPosition.y + 'px';
+    launcher.style.right = 'auto'; launcher.style.bottom = 'auto';
+    launcher.dataset.placement = 'manual';
+  }
+
+  function startLauncherDrag(event) {
+    if (!stylesReady || opened || capturing || event.isPrimary === false || event.button !== 0 || launcherDrag) return;
+    suppressLauncherClickUntil = 0;
+    const launcher = $('#launcher'), rect = launcher.getBoundingClientRect();
+    launcherDrag = { id: event.pointerId, startX: event.clientX, startY: event.clientY, x: rect.left, y: rect.top, moved: false };
+    try { launcher.setPointerCapture(event.pointerId); } catch (_) { /* Pointer capture may be unavailable for a synthetic event. */ }
+  }
+
+  function dragLauncher(event) {
+    if (!launcherDrag || event.pointerId !== launcherDrag.id) return;
+    event.stopPropagation();
+    const dx = event.clientX - launcherDrag.startX, dy = event.clientY - launcherDrag.startY;
+    if (!launcherDrag.moved && Math.hypot(dx, dy) < 8) return;
+    launcherDrag.moved = true;
+    if (event.cancelable) event.preventDefault();
+    $('#launcher').classList.add('dragging');
+    moveLauncher(launcherDrag.x + dx, launcherDrag.y + dy);
+  }
+
+  function finishLauncherDrag(event, cancelled = false) {
+    if (!launcherDrag || (event && event.pointerId !== launcherDrag.id)) return;
+    const drag = launcherDrag; launcherDrag = null;
+    $('#launcher').classList.remove('dragging');
+    if (drag.moved || cancelled) suppressLauncherClickUntil = performance.now() + 800;
+    try { if ($('#launcher').hasPointerCapture(drag.id)) $('#launcher').releasePointerCapture(drag.id); } catch (_) {}
+    scheduleLauncherPlacement();
+  }
+
+  function moveLauncherWithKeyboard(event) {
+    const delta = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[event.key];
+    if (!delta || event.altKey || event.ctrlKey || event.metaKey || opened || capturing || !stylesReady) return;
+    event.preventDefault(); event.stopPropagation();
+    const rect = $('#launcher').getBoundingClientRect(), step = event.shiftKey ? 40 : 10;
+    moveLauncher(rect.left + delta[0] * step, rect.top + delta[1] * step);
+  }
+
+  function positionLauncher() {
+    placementTimer = null; placementFrame = null; placementLastRun = performance.now();
+    if (!host || !stylesReady || opened || capturing || document.hidden) return;
+    const launcher = $('#launcher'), view = launcherViewport();
+    // Once the user moves the launcher, automatic avoidance must not move it
+    // back. Resizes, zoom, scrolling and modal changes only clamp its bounds.
+    if (manualLauncherPosition) { moveLauncher(manualLauncherPosition.x, manualLauncherPosition.y, view); return; }
+    if (launcherDrag) return;
     const current = launcher.getBoundingClientRect();
     const withinView = current.left >= view.left - 1 && current.top >= view.top - 1 && current.right <= view.right + 1 && current.bottom <= view.bottom + 1;
     // Do not move the click target under a pointer or a keyboard user. A viewport
@@ -720,6 +778,7 @@
       // Modal dialogs and fullscreen make everything outside their subtree inert.
       // Move into that subtree before raising the launcher in the top layer.
       if (host.parentElement !== target) {
+        finishLauncherDrag(null, true);
         if (!persistentStyles) { stylesReady = false; host.style.visibility = 'hidden'; }
         if (host.matches(':popover-open')) host.hidePopover();
         target.append(host);
@@ -727,6 +786,7 @@
       }
       if (!host.matches(':popover-open')) host.showPopover();
     } else if (!/^(CANVAS|VIDEO|IMG)$/.test(target.tagName) && host.parentElement !== target) {
+      finishLauncherDrag(null, true);
       if (!persistentStyles) { stylesReady = false; host.style.visibility = 'hidden'; }
       target.append(host);
       if (!persistentStyles) requestAnimationFrame(finishStyles);
@@ -741,7 +801,8 @@
     root.innerHTML = `
 
       <div id="safe-area" aria-hidden="true"></div>
-      <button id="launcher" type="button" aria-haspopup="dialog" aria-label="⚑ 오류 제보" title="오류 제보"><span aria-hidden="true">⚑</span><span class="launcher-label" aria-hidden="true"> 오류 제보</span></button>
+      <button id="launcher" type="button" aria-haspopup="dialog" aria-label="⚑ 오류 제보" aria-describedby="launcher-help" title="오류 제보 · 끌어서 이동, 방향키로 이동"><span aria-hidden="true">⚑</span><span class="launcher-label" aria-hidden="true"> 오류 제보</span></button>
+      <span id="launcher-help" hidden>끌어서 위치를 바꿀 수 있어요. 키보드 방향키로도 옮길 수 있고, Shift와 함께 누르면 더 멀리 이동해요. 짧게 누르거나 Enter를 누르면 오류 제보가 열려요.</span>
       <dialog aria-labelledby="title">
         <header><h2 id="title">어떤 문제가 있었나요?</h2><button id="close" type="button" aria-label="오류 제보 닫기">닫기</button></header>
         <div class="content">
@@ -774,7 +835,31 @@
     $('#launcher').addEventListener('pointerenter', event => { if (event.pointerType !== 'touch') launcherHovered = true; });
     $('#launcher').addEventListener('pointerleave', () => { launcherHovered = false; scheduleLauncherPlacement(); });
     $('#launcher').addEventListener('blur', scheduleLauncherPlacement);
-    $('#launcher').addEventListener('click', open);
+    let launcherTouchTap = false;
+    $('#launcher').addEventListener('pointerdown', event => { launcherTouchTap = false; startLauncherDrag(event); });
+    $('#launcher').addEventListener('pointermove', dragLauncher);
+    $('#launcher').addEventListener('pointerup', event => {
+      dragLauncher(event);
+      launcherTouchTap = event.pointerType === 'touch' && launcherDrag && event.pointerId === launcherDrag.id && !launcherDrag.moved;
+      finishLauncherDrag(event);
+    });
+    $('#launcher').addEventListener('touchend', event => {
+      if (!launcherTouchTap) return;
+      launcherTouchTap = false;
+      // A drag can suppress the next compatibility click. Complete taps here
+      // and prevent a delayed click from hitting the newly opened dialog.
+      event.preventDefault();
+      suppressLauncherClickUntil = performance.now() + 800;
+      open();
+    }, { passive: false });
+    $('#launcher').addEventListener('pointercancel', event => { launcherTouchTap = false; finishLauncherDrag(event, true); });
+    $('#launcher').addEventListener('lostpointercapture', event => finishLauncherDrag(event, true));
+    $('#launcher').addEventListener('keydown', moveLauncherWithKeyboard);
+    $('#launcher').addEventListener('keyup', event => { if (/^Arrow(Left|Right|Up|Down)$/.test(event.key) && !event.altKey && !event.ctrlKey && !event.metaKey) event.stopPropagation(); });
+    $('#launcher').addEventListener('click', event => {
+      if (event.detail !== 0 && performance.now() < suppressLauncherClickUntil) { event.preventDefault(); event.stopPropagation(); return; }
+      open();
+    });
     $('#close').addEventListener('click', close);
     dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
     root.addEventListener('keydown', event => { if (opened) event.stopPropagation(); });
@@ -798,7 +883,8 @@
     document.addEventListener('scroll', scheduleLauncherPlacement, { capture: true, passive: true });
     document.addEventListener('transitionend', scheduleLauncherPlacement, true);
     document.addEventListener('animationend', scheduleLauncherPlacement, true);
-    document.addEventListener('visibilitychange', scheduleLauncherPlacement);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) finishLauncherDrag(null, true); scheduleLauncherPlacement(); });
+    window.addEventListener('blur', () => finishLauncherDrag(null, true));
     if (window.visualViewport) {
       visualViewport.addEventListener('resize', scheduleLauncherPlacement, { passive: true });
       visualViewport.addEventListener('scroll', scheduleLauncherPlacement, { passive: true });
