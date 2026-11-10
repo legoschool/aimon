@@ -568,9 +568,9 @@
     const scope = activeGameModal || document.fullscreenElement || document.body;
     const controls = 'button,a[href],input,select,textarea,summary,[role="button"],[role="tab"],[role="slider"],[role="dialog"],[role="toolbar"],[role="alert"],[role="status"],[tabindex],[onclick],[data-legoschool-report-avoid],nav,header,footer,aside,dialog[open],img,video,iframe';
     const obstacles = [];
-    const add = rect => {
+    const add = (rect, essential = true) => {
       if (rect.width > 0 && rect.height > 0 && rect.right > view.left && rect.left < view.right && rect.bottom > view.top && rect.top < view.bottom) {
-        obstacles.push({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom });
+        obstacles.push({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, essential });
       }
     };
     const range = document.createRange();
@@ -586,10 +586,16 @@
       if (element.checkVisibility && !element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) continue;
       const broad = rect.width > view.width * .8 && rect.height > view.height * .75;
       const panel = ['fixed', 'sticky', 'absolute'].includes(style.position);
-      if (explicit || (!broad && (control || panel))) add(rect);
-      else for (const node of textNodes) {
-        range.selectNode(node);
-        for (const line of range.getClientRects()) add(line);
+      const touchControl = /joystick|touch[-_](stick|button|btn|control)/i.test(element.id + ' ' + element.getAttribute('class'));
+      if (explicit || (!broad && (control || touchControl || style.cursor === 'pointer'))) add(rect);
+      else {
+        // A panel may fill the screen while containing plenty of blank space.
+        // Its text stays protected even if that blank interior is needed later.
+        if (!broad && panel) add(rect, false);
+        for (const node of textNodes) {
+          range.selectNode(node);
+          for (const line of range.getClientRects()) add(line);
+        }
       }
     }
     return obstacles;
@@ -614,13 +620,16 @@
     // Do not move the click target under a pointer or a keyboard user. A viewport
     // change is allowed to bring an otherwise off-screen button back into view.
     if (launcherPosition && withinView && (launcherHovered || root.activeElement === launcher)) return;
-    const obstacles = launcherObstacles(view);
+    const allObstacles = launcherObstacles(view);
+    let obstacles = allObstacles;
     const gap = 8;
     const overlap = (x, y, width, height) => obstacles.reduce((area, rect) => area + Math.max(0, Math.min(x + width + gap, rect.right) - Math.max(x - gap, rect.left)) * Math.max(0, Math.min(y + height + gap, rect.bottom) - Math.max(y - gap, rect.top)), 0);
     let best = null;
     // Prefer the labelled button. Only use the 44px icon when a labelled button
     // cannot fit anywhere. Keep the accessible name in both layouts.
-    for (const compact of [false, true]) {
+    for (const { compact, panels } of [{ compact: false, panels: true }, { compact: true, panels: true }, { compact: false, panels: false }, { compact: true, panels: false }]) {
+      obstacles = panels ? allObstacles : allObstacles.filter(rect => rect.essential);
+      if (!panels && !compact) best = null;
       launcher.classList.toggle('compact', compact);
       const { width, height } = launcher.getBoundingClientRect();
       if (width > view.width || height > view.height) continue;
