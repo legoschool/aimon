@@ -5,7 +5,7 @@
   const script = document.currentScript;
   const base = new URL('.', script && script.src ? script.src : location.href);
   const options = { ...((script && script.dataset) || {}) };
-  const VERSION = '1.0.0';
+  const VERSION = '1.1.0';
   const MAX_EDGE = 1920;
   const contextProviders = new Set();
   let host, root, dialog, canvas, baseImage, opened = false, busy = false, capturing = false;
@@ -14,6 +14,8 @@
   let libraryPromise, configurationPromise, submitPromise;
   let lastPayload = null, receiptLocked = false;
   let activeGameModal = null;
+  let placementTimer, placementFrame, placementLastRun = 0, launcherHovered = false;
+  let launcherPosition = null;
   const rewardedHere = new Set();
   const pendingRewards = new Map();
   const claimingRewards = new Map();
@@ -559,6 +561,122 @@
     if (previousFocus && previousFocus.isConnected) previousFocus.focus(); else $('#launcher').focus();
   }
 
+  // Keep the reporter away from the game's controls AND readable HUD content.
+  // Broad game surfaces are backgrounds; games can reserve canvas HUD regions
+  // with data-legoschool-report-avoid on a positioned DOM element.
+  function launcherObstacles(view) {
+    const scope = activeGameModal || document.fullscreenElement || document.body;
+    const controls = 'button,a[href],input,select,textarea,summary,[role="button"],[role="tab"],[role="slider"],[role="dialog"],[role="toolbar"],[role="alert"],[role="status"],[tabindex],[onclick],[data-legoschool-report-avoid],nav,header,footer,aside,dialog[open],img,video,iframe';
+    const obstacles = [];
+    const add = rect => {
+      if (rect.width > 0 && rect.height > 0 && rect.right > view.left && rect.left < view.right && rect.bottom > view.top && rect.top < view.bottom) {
+        obstacles.push({ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom });
+      }
+    };
+    const range = document.createRange();
+    for (const element of [scope, ...scope.querySelectorAll('*')]) {
+      if (element === host || element.closest('#legoschool-bug-report') || /^(SCRIPT|STYLE|LINK|META|NOSCRIPT|OPTION)$/.test(element.tagName)) continue;
+      const explicit = element.hasAttribute('data-legoschool-report-avoid');
+      const control = element.matches(controls);
+      const textNodes = Array.from(element.childNodes).filter(node => node.nodeType === 3 && node.textContent.trim());
+      const rect = element.getBoundingClientRect();
+      if (!rect.width || !rect.height || rect.bottom <= view.top || rect.top >= view.bottom || rect.right <= view.left || rect.left >= view.right) continue;
+      const style = getComputedStyle(element);
+      if (style.visibility !== 'visible' || Number(style.opacity) === 0 || element.closest('[hidden],[inert]')) continue;
+      if (element.checkVisibility && !element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) continue;
+      const broad = rect.width > view.width * .8 && rect.height > view.height * .75;
+      const panel = ['fixed', 'sticky', 'absolute'].includes(style.position);
+      if (explicit || (!broad && (control || panel))) add(rect);
+      else for (const node of textNodes) {
+        range.selectNode(node);
+        for (const line of range.getClientRects()) add(line);
+      }
+    }
+    return obstacles;
+  }
+
+  function positionLauncher() {
+    placementTimer = null; placementFrame = null; placementLastRun = performance.now();
+    if (!host || opened || capturing || document.hidden) return;
+    const launcher = $('#launcher');
+    const viewport = window.visualViewport;
+    const safe = getComputedStyle($('#safe-area'));
+    const inset = side => Math.max(10, parseFloat(safe.getPropertyValue('padding-' + side)) || 0);
+    const view = {
+      left: (viewport ? viewport.offsetLeft : 0) + inset('left'),
+      top: (viewport ? viewport.offsetTop : 0) + inset('top'),
+      right: (viewport ? viewport.offsetLeft + viewport.width : document.documentElement.clientWidth) - inset('right'),
+      bottom: (viewport ? viewport.offsetTop + viewport.height : innerHeight) - inset('bottom')
+    };
+    view.width = view.right - view.left; view.height = view.bottom - view.top;
+    const current = launcher.getBoundingClientRect();
+    const withinView = current.left >= view.left - 1 && current.top >= view.top - 1 && current.right <= view.right + 1 && current.bottom <= view.bottom + 1;
+    // Do not move the click target under a pointer or a keyboard user. A viewport
+    // change is allowed to bring an otherwise off-screen button back into view.
+    if (launcherPosition && withinView && (launcherHovered || root.activeElement === launcher)) return;
+    const obstacles = launcherObstacles(view);
+    const gap = 8;
+    const overlap = (x, y, width, height) => obstacles.reduce((area, rect) => area + Math.max(0, Math.min(x + width + gap, rect.right) - Math.max(x - gap, rect.left)) * Math.max(0, Math.min(y + height + gap, rect.bottom) - Math.max(y - gap, rect.top)), 0);
+    let best = null;
+    // Prefer the labelled button. Only use the 44px icon when a labelled button
+    // cannot fit anywhere. Keep the accessible name in both layouts.
+    for (const compact of [false, true]) {
+      launcher.classList.toggle('compact', compact);
+      const { width, height } = launcher.getBoundingClientRect();
+      if (width > view.width || height > view.height) continue;
+      const right = view.right - width, bottom = view.bottom - height;
+      const xs = new Set([right, view.left]);
+      const ys = new Set([bottom, view.top]);
+      for (const rect of obstacles) {
+        for (const x of [rect.left - gap - width, rect.right + gap]) if (x >= view.left && x <= right) xs.add(Math.round(x));
+        for (const y of [rect.top - gap - height, rect.bottom + gap]) if (y >= view.top && y <= bottom) ys.add(Math.round(y));
+      }
+      const candidates = [];
+      const push = (x, y) => candidates.push({ x, y, width, height, compact, distance: Math.abs(right - x) + Math.abs(bottom - y) });
+      if (launcherPosition && launcherPosition.compact === compact && withinView) {
+        if (overlap(current.left, current.top, width, height) === 0) { best = { x: current.left, y: current.top, width, height, compact, area: 0 }; break; }
+      }
+      // Start near the familiar lower-right corner, then try both side edges.
+      for (const y of ys) { push(right, y); push(view.left, y); }
+      for (const x of xs) { push(x, bottom); push(x, view.top); }
+      candidates.sort((a, b) => a.distance - b.distance);
+      let fit = null;
+      for (const candidate of candidates) {
+        candidate.area = overlap(candidate.x, candidate.y, width, height);
+        if (!best || candidate.area < best.area) best = candidate;
+        if (candidate.area === 0) { fit = candidate; break; }
+      }
+      // Find a horizontal gap for each possible row, without an expensive
+      // all-X by all-Y by all-obstacles search on dense game screens.
+      if (!fit) for (const y of [...ys].sort((a, b) => b - a)) {
+        const blocked = obstacles.filter(rect => rect.top < y + height + gap && rect.bottom > y - gap).sort((a, b) => b.right - a.right);
+        let x = right;
+        for (const rect of blocked) {
+          if (x < rect.right + gap && x + width + gap > rect.left) x = rect.left - gap - width;
+        }
+        if (x >= view.left) { fit = { x, y, width, height, compact, area: 0 }; break; }
+      }
+      if (fit) { best = fit; break; }
+    }
+    if (!best) return;
+    launcher.classList.toggle('compact', best.compact);
+    launcher.style.left = Math.round(best.x) + 'px';
+    launcher.style.top = Math.round(best.y) + 'px';
+    launcher.style.right = 'auto'; launcher.style.bottom = 'auto';
+    launcher.dataset.placement = best.area === 0 ? 'clear' : 'crowded';
+    launcherPosition = best;
+  }
+
+  function scheduleLauncherPlacement() {
+    if (placementTimer || placementFrame || opened || capturing) return;
+    // Game HUDs can change every animation frame. Coalesce changes and limit
+    // geometry work to five passes/second instead of measuring every mutation.
+    placementTimer = setTimeout(() => {
+      placementTimer = null;
+      placementFrame = requestAnimationFrame(positionLauncher);
+    }, Math.max(0, 200 - (performance.now() - placementLastRun)));
+  }
+
   function placeHost() {
     if (!host || opened) return;
     const gameDialogs = Array.from(document.querySelectorAll('dialog')).filter(element => {
@@ -567,12 +685,15 @@
     if (!activeGameModal || !gameDialogs.includes(activeGameModal)) activeGameModal = gameDialogs[gameDialogs.length - 1] || null;
     const target = activeGameModal || document.fullscreenElement || document.body;
     if (typeof host.showPopover === 'function') {
-      if (host.matches(':popover-open')) host.hidePopover();
       // Modal dialogs and fullscreen make everything outside their subtree inert.
       // Move into that subtree before raising the launcher in the top layer.
-      if (host.parentElement !== target) target.append(host);
-      host.showPopover();
+      if (host.parentElement !== target) {
+        if (host.matches(':popover-open')) host.hidePopover();
+        target.append(host);
+      }
+      if (!host.matches(':popover-open')) host.showPopover();
     } else if (!/^(CANVAS|VIDEO|IMG)$/.test(target.tagName) && host.parentElement !== target) target.append(host);
+    scheduleLauncherPlacement();
   }
 
   function mount() {
@@ -580,7 +701,8 @@
     root = host.attachShadow({ mode: 'open' });
     root.innerHTML = `
 
-      <button id="launcher" type="button" aria-haspopup="dialog">⚑ 오류 제보</button>
+      <div id="safe-area" aria-hidden="true"></div>
+      <button id="launcher" type="button" aria-haspopup="dialog" aria-label="⚑ 오류 제보" title="오류 제보"><span aria-hidden="true">⚑</span><span class="launcher-label" aria-hidden="true"> 오류 제보</span></button>
       <dialog aria-labelledby="title">
         <header><h2 id="title">어떤 문제가 있었나요?</h2><button id="close" type="button" aria-label="오류 제보 닫기">닫기</button></header>
         <div class="content">
@@ -608,6 +730,10 @@
     // A manual popover keeps the launcher in the browser top layer, including canvas fullscreen.
     if (typeof host.showPopover === 'function') { host.setAttribute('popover', 'manual'); host.showPopover(); }
     dialog = $('dialog'); canvas = $('#canvas');
+    styles.addEventListener('load', scheduleLauncherPlacement);
+    $('#launcher').addEventListener('pointerenter', event => { if (event.pointerType !== 'touch') launcherHovered = true; });
+    $('#launcher').addEventListener('pointerleave', () => { launcherHovered = false; scheduleLauncherPlacement(); });
+    $('#launcher').addEventListener('blur', scheduleLauncherPlacement);
     $('#launcher').addEventListener('click', open);
     $('#close').addEventListener('click', close);
     dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
@@ -628,9 +754,27 @@
     const finish = () => { if (activeAction) { actions.push(activeAction); activeAction = null; draw(); } };
     canvas.addEventListener('pointerup', finish); canvas.addEventListener('pointercancel', finish);
     document.addEventListener('fullscreenchange', placeHost);
+    window.addEventListener('resize', scheduleLauncherPlacement, { passive: true });
+    document.addEventListener('scroll', scheduleLauncherPlacement, { capture: true, passive: true });
+    document.addEventListener('transitionend', scheduleLauncherPlacement, true);
+    document.addEventListener('animationend', scheduleLauncherPlacement, true);
+    document.addEventListener('visibilitychange', scheduleLauncherPlacement);
+    if (window.visualViewport) {
+      visualViewport.addEventListener('resize', scheduleLauncherPlacement, { passive: true });
+      visualViewport.addEventListener('scroll', scheduleLauncherPlacement, { passive: true });
+    }
+    if (window.ResizeObserver) {
+      const observer = new ResizeObserver(scheduleLauncherPlacement);
+      observer.observe(document.body); observer.observe(document.documentElement);
+    }
+    if (document.fonts) document.fonts.ready.then(scheduleLauncherPlacement);
     new MutationObserver(records => {
       let changed = false;
+      let layoutChanged = false;
       for (const record of records) {
+        if (record.target === host || host.contains(record.target)) continue;
+        if (record.type === 'childList' && [...record.addedNodes, ...record.removedNodes].every(node => node === host)) continue;
+        layoutChanged = true;
         if (record.type === 'attributes' && record.target.tagName === 'DIALOG') {
           changed = true;
           if (record.target.open) activeGameModal = record.target;
@@ -640,7 +784,8 @@
         }
       }
       if (changed) placeHost();
-    }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['open'] });
+      if (layoutChanged) scheduleLauncherPlacement();
+    }).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['open', 'hidden', 'class', 'style', 'inert', 'data-legoschool-report-avoid'] });
     placeHost();
     window.dispatchEvent(new CustomEvent('legoschool:bug-report-ready'));
     configuration();

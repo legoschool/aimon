@@ -4,7 +4,10 @@
         button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible { outline:3px solid #0c70c8; outline-offset:3px; }
         button:disabled { opacity:.5; cursor:default; }
         button { border:1px solid #b8c5d4; border-radius:9px; background:#fff; color:#18263a; min-height:40px; padding:7px 12px; }
-        #launcher { position:fixed; right:max(14px,env(safe-area-inset-right)); bottom:max(14px,env(safe-area-inset-bottom)); pointer-events:auto; border:1px solid #ffffffc0; background:#163a55; color:#fff; box-shadow:0 3px 14px #0004; font-size:14px; font-weight:700; min-height:44px; border-radius:24px; padding:10px 16px; }
+        #safe-area { position:fixed; visibility:hidden; pointer-events:none; padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+        #launcher { position:fixed; right:max(14px,env(safe-area-inset-right)); bottom:max(14px,env(safe-area-inset-bottom)); pointer-events:auto; border:1px solid #ffffffc0; background:#163a55; color:#fff; box-shadow:0 3px 14px #0004; font-size:14px; font-weight:700; min-width:44px; min-height:44px; border-radius:24px; padding:10px 16px; white-space:nowrap; touch-action:manipulation; }
+        #launcher.compact { width:44px; height:44px; padding:0; font-size:20px; }
+        #launcher.compact .launcher-label { display:none; }
         dialog { pointer-events:auto; border:0; border-radius:18px; padding:0; color:#18263a; background:#f5f7fb; width:min(1060px,calc(100vw - 28px)); max-height:calc(100dvh - 28px); box-shadow:0 16px 80px #0006; margin:auto; }
         dialog::backdrop { background:#102436aa; }
         dialog[open] { display:flex; flex-direction:column; overflow:hidden; }
