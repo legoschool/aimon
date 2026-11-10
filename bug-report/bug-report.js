@@ -5,7 +5,7 @@
   const script = document.currentScript;
   const base = new URL('.', script && script.src ? script.src : location.href);
   const options = { ...((script && script.dataset) || {}) };
-  const VERSION = '1.1.0';
+  const VERSION = '1.1.1';
   const MAX_EDGE = 1920;
   const contextProviders = new Set();
   let host, root, dialog, canvas, baseImage, opened = false, busy = false, capturing = false;
@@ -16,6 +16,7 @@
   let activeGameModal = null;
   let placementTimer, placementFrame, placementLastRun = 0, launcherHovered = false;
   let launcherPosition = null;
+  let stylesheetLink, stylesReady = false, persistentStyles = false;
   const rewardedHere = new Set();
   const pendingRewards = new Map();
   const claimingRewards = new Map();
@@ -230,7 +231,7 @@
         if (item.element.getAttribute(attribute) !== item.marker) return;
         if (item.previousMarker == null) item.element.removeAttribute(attribute); else item.element.setAttribute(attribute, item.previousMarker);
       }));
-      host.style.visibility = '';
+      host.style.visibility = stylesReady ? '' : 'hidden';
       capturing = false;
       $('#recapture').disabled = false;
       $('#submit').disabled = busy || submitted;
@@ -603,7 +604,7 @@
 
   function positionLauncher() {
     placementTimer = null; placementFrame = null; placementLastRun = performance.now();
-    if (!host || opened || capturing || document.hidden) return;
+    if (!host || !stylesReady || opened || capturing || document.hidden) return;
     const launcher = $('#launcher');
     const viewport = window.visualViewport;
     const safe = getComputedStyle($('#safe-area'));
@@ -686,6 +687,28 @@
     }, Math.max(0, 200 - (performance.now() - placementLastRun)));
   }
 
+  function finishStyles() {
+    if (!stylesheetLink.sheet) return;
+    if (!persistentStyles && 'adoptedStyleSheets' in root && typeof CSSStyleSheet === 'function' && typeof CSSStyleSheet.prototype.replaceSync === 'function') {
+      try {
+        const rules = Array.from(stylesheetLink.sheet.cssRules);
+        const css = rules.map(rule => rule.cssText).join('\n');
+        // Imported sheets and URL assets must retain the original link's loading
+        // and relative-URL behavior. Cross-origin CSSOM access can also fail.
+        if (!rules.some(rule => rule.type === 3) && !/url\s*\(/i.test(css)) {
+          const sheet = new CSSStyleSheet();
+          sheet.replaceSync(css);
+          root.adoptedStyleSheets = [...root.adoptedStyleSheets, sheet];
+          persistentStyles = true;
+          stylesheetLink.remove();
+        }
+      } catch (_) { /* Keep the supported external stylesheet fallback. */ }
+    }
+    stylesReady = true;
+    if (!capturing) host.style.visibility = '';
+    scheduleLauncherPlacement();
+  }
+
   function placeHost() {
     if (!host || opened) return;
     const gameDialogs = Array.from(document.querySelectorAll('dialog')).filter(element => {
@@ -697,16 +720,23 @@
       // Modal dialogs and fullscreen make everything outside their subtree inert.
       // Move into that subtree before raising the launcher in the top layer.
       if (host.parentElement !== target) {
+        if (!persistentStyles) { stylesReady = false; host.style.visibility = 'hidden'; }
         if (host.matches(':popover-open')) host.hidePopover();
         target.append(host);
+        if (!persistentStyles) requestAnimationFrame(finishStyles);
       }
       if (!host.matches(':popover-open')) host.showPopover();
-    } else if (!/^(CANVAS|VIDEO|IMG)$/.test(target.tagName) && host.parentElement !== target) target.append(host);
+    } else if (!/^(CANVAS|VIDEO|IMG)$/.test(target.tagName) && host.parentElement !== target) {
+      if (!persistentStyles) { stylesReady = false; host.style.visibility = 'hidden'; }
+      target.append(host);
+      if (!persistentStyles) requestAnimationFrame(finishStyles);
+    }
     scheduleLauncherPlacement();
   }
 
   function mount() {
     host = document.createElement('div'); host.id = 'legoschool-bug-report'; host.setAttribute('data-html2canvas-ignore', '');
+    host.style.visibility = 'hidden';
     root = host.attachShadow({ mode: 'open' });
     root.innerHTML = `
 
@@ -734,12 +764,13 @@
         </div>
         <footer><div id="reward" role="status" hidden></div><div id="burst" aria-hidden="true"></div><p id="status" role="status" aria-live="polite"></p><div class="row"><button id="download" type="button">작성 내용 내려받기</button><button id="submit" type="button">오류 제보 보내기</button></div></footer>
       </dialog>`;
-    const styles = document.createElement('link'); styles.rel = 'stylesheet'; styles.href = options.cssUrl || new URL('bug-report.css', base).href; root.prepend(styles);
+    stylesheetLink = document.createElement('link'); stylesheetLink.rel = 'stylesheet'; stylesheetLink.href = options.cssUrl || new URL('bug-report.css', base).href;
+    stylesheetLink.addEventListener('load', finishStyles);
+    root.prepend(stylesheetLink);
     document.body.append(host);
     // A manual popover keeps the launcher in the browser top layer, including canvas fullscreen.
     if (typeof host.showPopover === 'function') { host.setAttribute('popover', 'manual'); host.showPopover(); }
     dialog = $('dialog'); canvas = $('#canvas');
-    styles.addEventListener('load', scheduleLauncherPlacement);
     $('#launcher').addEventListener('pointerenter', event => { if (event.pointerType !== 'touch') launcherHovered = true; });
     $('#launcher').addEventListener('pointerleave', () => { launcherHovered = false; scheduleLauncherPlacement(); });
     $('#launcher').addEventListener('blur', scheduleLauncherPlacement);
