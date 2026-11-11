@@ -6,7 +6,7 @@
   const API = 'https://oawbzsdjkzucxlcyhgdr.supabase.co/rest/v1/rpc/';
   const KEY = 'sb_publishable_ZgTRFJinUZSekn_Uzn1REg_s7wFF_xg';
   const providers = [], sessions = new Map(), RAM = new Map();
-  let C, host, shadow, dialog, current, lastTick = performance.now(), lastInput = -Infinity;
+  let C, host, shadow, dialog, current, returnFocus, lastTick = performance.now(), lastInput = -Infinity;
   let selected = 'seconds', period = 'week', selectedGame = defaultGame, loading = false, renderSerial = 0;
   let status = '기록은 플레이를 시작하면 쌓여요.', catalog = [], boardCache = new Map(), providerError = '';
   const storage = {
@@ -149,6 +149,43 @@
     tick();selectedGame=current?.game||defaultGame;render();dialog.showModal();void loadBoard();
     shadow.querySelector('#close').focus();
   }
+  // Keep a full-size entry inside each game's own start screen. The compact launcher remains available during play.
+  const entryAnchors = {
+    'aimon': ['#screen-title .title-box h1'],
+    'science-world': ['.game-login .gl-title'],
+    'haessal-season': ['#title .tbox h1'],
+    'nanoho-body': ['#title .panel h1'],
+    'bulkkot-escape': ['#title .tbox h1'],
+    'banjjak-village': ['#title .tcard h1'],
+    'pureum-island': ['#title .tcard .lobby-heading'],
+    'bitnaru-village': ['#title .tcard h1'],
+    'science-stack': ['#s-title h1'],
+    'word-stack': ['#s-title h1'],
+    'digital-village': ['#intro .intro-copy h2'],
+    'three-kingdoms': ['#intro .intro-copy h2', '#playerForm', '.hub-heading h1', '.entry-layout h1'],
+    'haedong-heroes': ['#login-title', '#lobby > .brand'],
+    'pulse-arena': ['#menu > .home-top'],
+    'newport-plan': ['#lobby > .lobby-header'],
+    'moyeora-playground': ['#welcome .welcome-card h1', '#welcome .welcome-card h2'],
+    'brain-playground': ['.room-greeting', '#game-tabs']
+  };
+  const entries = new WeakMap();
+  function installEntries() {
+    if(tag.dataset.auto==='1')return;
+    for(const selector of entryAnchors[defaultGame]||[]){
+      const anchor=document.querySelector(selector);if(!anchor)continue;
+      const previous=entries.get(anchor), hidden=selector==='#game-tabs'&&document.body.classList.contains('room-open');
+      if(previous?.isConnected){previous.hidden=hidden;continue;}
+      const entry=document.createElement('div');entry.className='fun-rank-main-entry';entry.dataset.entry='';
+      entry.hidden=hidden;if(selector==='.room-greeting')entry.dataset.compact='';
+      const root=entry.attachShadow({mode:'open'});
+      root.innerHTML=`<link rel="stylesheet" href="${new URL('ranking.css',base)}"><button type="button" class="main-entry" aria-label="별난 랭킹 보기">${icon}<span><strong>별난 랭킹 보기</strong><small>점수도, 도전도! 친구들의 기록은?</small></span><span class="entry-arrow" aria-hidden="true">→</span></button>`;
+      const button=root.querySelector('button');button.onclick=e=>{e.preventDefault();e.stopPropagation();returnFocus=button;void open();};
+      entry.addEventListener('keydown',e=>e.stopPropagation());entry.addEventListener('keyup',e=>e.stopPropagation());
+      if(selector==='#playerForm')anchor.before(entry);else anchor.after(entry);
+      entries.set(anchor,entry);
+    }
+  }
   window.FunRank={register:fn=>providers.push(fn),capture:tick,open,version:'1.0.0',inspect:()=>({providers:providers.length,providerError,active:!!sample()?.active,game:sample()?.game||defaultGame,stats:C?localStats(current):null})};
   window.dispatchEvent(new Event('fun-rank:ready'));
   async function init() {
@@ -158,14 +195,15 @@
     if(!catalog.some(g=>g.id===defaultGame))catalog.unshift({id:defaultGame,name:defaultName,metrics:['seconds']});
     host=document.createElement('div');host.id='fun-rank-widget';shadow=host.attachShadow({mode:'open'});
     shadow.innerHTML=`<link rel="stylesheet" href="${new URL('ranking.css',base)}"><button class="launcher" aria-label="별난 랭킹 열기">${icon}<span>별난 랭킹</span></button><dialog aria-label="우리들의 별난 기록실"></dialog>`;
-    document.body.append(host);dialog=shadow.querySelector('dialog');shadow.querySelector('.launcher').onclick=open;
-    dialog.addEventListener('close',()=>{renderSerial++;shadow.querySelector('.launcher').focus();});
+    document.body.append(host);dialog=shadow.querySelector('dialog');shadow.querySelector('.launcher').onclick=()=>{returnFocus=shadow.querySelector('.launcher');void open();};
+    dialog.addEventListener('close',()=>{renderSerial++;(returnFocus?.isConnected?returnFocus:shadow.querySelector('.launcher')).focus();});
     dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close();});
     host.addEventListener('keydown',e=>{if(dialog.open)e.stopPropagation();});
     host.addEventListener('keyup',e=>{if(dialog.open)e.stopPropagation();});
     document.addEventListener('fullscreenchange',()=>{(document.fullscreenElement||document.body).append(host);});
     for(const event of ['pointerdown','keydown','wheel','touchstart','pointermove'])window.addEventListener(event,e=>{if(e.isTrusted&&!e.composedPath().includes(host))lastInput=performance.now();},{passive:true});
     setInterval(tick,1000);
+    installEntries();setInterval(installEntries,1000);
     setInterval(()=>{for(const s of sessions.values()){persist(s);void flush(s);}},60000);
     document.addEventListener('visibilitychange',()=>{if(document.hidden){for(const s of sessions.values()){persist(s);void flush(s);}}lastTick=performance.now();});
     window.addEventListener('pagehide',()=>{for(const s of sessions.values()){persist(s);void flush(s);}});
