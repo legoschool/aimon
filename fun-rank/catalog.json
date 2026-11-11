@@ -1,0 +1,239 @@
+[
+  {
+    "id": "aimon",
+    "name": "AI몬스터",
+    "metrics": [
+      "seconds",
+      "clears"
+    ]
+  },
+  {
+    "id": "science-world",
+    "name": "미래탐험",
+    "metrics": [
+      "seconds",
+      "clears"
+    ]
+  },
+  {
+    "id": "haessal-season",
+    "name": "햇살여행",
+    "metrics": [
+      "seconds",
+      "clears",
+      "best",
+      "improvements"
+    ]
+  },
+  {
+    "id": "nanoho-body",
+    "name": "몸속탐험",
+    "metrics": [
+      "seconds",
+      "clears",
+      "best",
+      "improvements"
+    ]
+  },
+  {
+    "id": "bulkkot-escape",
+    "name": "불꽃탈출",
+    "metrics": [
+      "seconds",
+      "clears",
+      "best",
+      "improvements"
+    ]
+  },
+  {
+    "id": "banjjak-village",
+    "name": "반짝수리",
+    "metrics": [
+      "seconds",
+      "clears",
+      "best",
+      "improvements"
+    ]
+  },
+  {
+    "id": "pureum-island",
+    "name": "신항도시",
+    "metrics": [
+      "seconds",
+      "clears",
+      "best",
+      "improvements"
+    ]
+  },
+  {
+    "id": "bitnaru-village",
+    "name": "빛탐정",
+    "metrics": [
+      "seconds",
+      "clears",
+      "best",
+      "improvements"
+    ]
+  },
+  {
+    "id": "science-stack",
+    "name": "과학몬 별 쌓기",
+    "metrics": [
+      "seconds",
+      "clears"
+    ]
+  },
+  {
+    "id": "word-stack",
+    "name": "낱말몬 별 쌓기",
+    "metrics": [
+      "seconds",
+      "clears"
+    ]
+  },
+  {
+    "id": "digital-village",
+    "name": "다온이와 디지털 마을",
+    "metrics": [
+      "seconds",
+      "clears"
+    ]
+  },
+  {
+    "id": "three-kingdoms",
+    "name": "삼국영웅전 전략",
+    "metrics": [
+      "seconds",
+      "clears",
+      "wins"
+    ]
+  },
+  {
+    "id": "haedong-heroes",
+    "name": "해동영웅전",
+    "metrics": [
+      "seconds",
+      "deaths",
+      "retries",
+      "clears",
+      "wins",
+      "best",
+      "improvements"
+    ]
+  },
+  {
+    "id": "pulse-arena",
+    "name": "펄스 아레나",
+    "metrics": [
+      "seconds",
+      "deaths",
+      "retries",
+      "clears",
+      "wins",
+      "best",
+      "improvements",
+      "healing"
+    ]
+  },
+  {
+    "id": "newport-plan",
+    "name": "NEWPORT PLAN",
+    "metrics": [
+      "seconds",
+      "deaths",
+      "retries",
+      "clears",
+      "wins",
+      "best",
+      "improvements",
+      "healing"
+    ]
+  },
+  {
+    "id": "moyeora-playground",
+    "name": "모여라 놀이터",
+    "metrics": [
+      "seconds",
+      "clears"
+    ]
+  },
+  {
+    "id": "brain-playground",
+    "name": "두뇌 게임 놀이터",
+    "metrics": [
+      "seconds",
+      "clears"
+    ]
+  },
+  {
+    "id": "brain-sudoku",
+    "name": "두뇌 놀이터 · 스도쿠",
+    "metrics": [
+      "seconds",
+      "clears"
+    ]
+  },
+  {
+    "id": "brain-chess",
+    "name": "두뇌 놀이터 · 체스",
+    "metrics": [
+      "seconds",
+      "clears",
+      "wins"
+    ]
+  },
+  {
+    "id": "brain-janggi",
+    "name": "두뇌 놀이터 · 장기",
+    "metrics": [
+      "seconds",
+      "clears",
+      "wins"
+    ]
+  },
+  {
+    "id": "brain-go",
+    "name": "두뇌 놀이터 · 바둑",
+    "metrics": [
+      "seconds",
+      "clears",
+      "wins"
+    ]
+  },
+  {
+    "id": "brain-omok",
+    "name": "두뇌 놀이터 · 오목",
+    "metrics": [
+      "seconds",
+      "clears",
+      "wins"
+    ]
+  },
+  {
+    "id": "brain-othello",
+    "name": "두뇌 놀이터 · 오델로",
+    "metrics": [
+      "seconds",
+      "clears",
+      "wins"
+    ]
+  },
+  {
+    "id": "brain-catch",
+    "name": "두뇌 놀이터 · 책갈피 받기",
+    "metrics": [
+      "seconds",
+      "clears",
+      "best",
+      "improvements"
+    ]
+  },
+  {
+    "id": "brain-memory",
+    "name": "두뇌 놀이터 · 짝꿍 카드",
+    "metrics": [
+      "seconds",
+      "clears"
+    ]
+  }
+]

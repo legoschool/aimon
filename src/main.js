@@ -740,3 +740,12 @@ function setupTouchPad() {
   window.addEventListener("blur", stopHold);
   document.addEventListener("visibilitychange", stopHold);
 }
+
+/* LEGO-FUN-RANK:START */
+{
+  let rankEpoch=0,rankLastTime=-1;
+  const rankProvider=()=>{return ({player:save.startedAt?save.name:null,active:['map','battle','review','missions'].includes(current),run:'career',totals:{clears:save.caught.length}});};
+  const registerRank=()=>window.FunRank.register(rankProvider);
+  if(window.FunRank)registerRank();else window.addEventListener('fun-rank:ready',registerRank,{once:true});
+}
+/* LEGO-FUN-RANK:END */
